@@ -14,50 +14,50 @@
 using namespace rapidxml;
 using namespace std;
 
-Catalog* Catalog::_instance = NULL;
+Catalog *Catalog::_instance = NULL;
 
-Catalog* Catalog::instance() {
-    if(_instance == NULL) 
+Catalog *Catalog::instance()
+{
+    if(_instance == NULL) {
         _instance = new Catalog();
+    }
 
     return _instance;
 }
 
-int Catalog::openConfigFile(const string& conf_file) {
+int Catalog::openConfigFile(const string &conf_file)
+{
     _conf_file = conf_file;
 
-	ifstream ifs(conf_file.c_str());
-	if(!ifs) {
-		ofstream ofs(conf_file.c_str());
-		if(!ofs.is_open()) {
-			throw __FILE__ " Catalog::openConfigFile: Cannot open catalog file for write";
-		}
-		// Default configuration
-		ofs << "<suites>" << endl;
-		ofs << "</suites>" << endl;
+    ifstream ifs(conf_file.c_str());
+    if(!ifs) {
+        ofstream ofs(conf_file.c_str());
+        if(!ofs.is_open()) {
+            throw __FILE__ " Catalog::openConfigFile: Cannot open catalog file for write";
+        }
+        // Default configuration
+        ofs << "<suites>" << endl;
+        ofs << "</suites>" << endl;
 
-		ofs.close();
-	} else {
-		ifs.close();
-	}
+        ofs.close();
+    } else {
+        ifs.close();
+    }
 
     xml_document<> doc;    // character type defaults to char
     char *cstr = getFileContent(conf_file);
     doc.parse<0>(cstr);
-    for(xml_node<> *suite = doc.first_node()->first_node(); suite; suite = suite->next_sibling())
-    {
+    for(xml_node<> *suite = doc.first_node()->first_node(); suite; suite = suite->next_sibling()) {
         Suite s;
         s.label = suite->first_attribute("label")->value();
         s.id = suite->first_attribute("id")->value();
-        for(xml_node<> *node = suite->first_node(); node; node = node->next_sibling())
-        {
+        for(xml_node<> *node = suite->first_node(); node; node = node->next_sibling()) {
             s.members.push_back(node->first_attribute("id")->value());
-            if(node->name() == string("plugin"))
+            if(node->name() == string("plugin")) {
                 _plugins[node->first_attribute("id")->value()] = node->first_attribute("file")->value();
-            else if(node->name() == string("workflow"))
+            } else if(node->name() == string("workflow")) {
                 _workflows[node->first_attribute("id")->value()] = node->first_attribute("file")->value();
-            else
-            {
+            } else {
                 DBG_LOG;
             }
 
@@ -70,54 +70,60 @@ int Catalog::openConfigFile(const string& conf_file) {
     return 0;
 }
 
-int Catalog::updateConfigFile() {
+int Catalog::updateConfigFile()
+{
     // Write to a temp file
     string temp_file = _conf_file + ".tmp";
     // cout << "Building catalog: " << temp_file << endl;
     buildXml(temp_file);
 
     // If nothing wrong, move temp file to the config file
-    if(moveFile(temp_file, _conf_file))
+    if(moveFile(temp_file, _conf_file)) {
         throw __FILE__ " Error updating the system catalog";
+    }
     return 0;
 }
 
-void Catalog::listSuites(const string& root_dir)
+void Catalog::listSuites(const string &root_dir)
 {
-    for(vector <Suite>::iterator it = _suites.begin(); it != _suites.end(); it++)
-    {
+    for(vector <Suite>::iterator it = _suites.begin(); it != _suites.end(); it++) {
         cout << "Suite ID: " << (*it).id << ", Suite Label: " << (*it).label << endl;
-        for( vector <string>::iterator itt = (*it).members.begin(); itt != (*it).members.end(); itt++) {
+        for(vector <string>::iterator itt = (*it).members.begin(); itt != (*it).members.end(); itt++) {
             string id = *itt;
             string conf_file;
             if(_plugins.find(id) != _plugins.end()) {
                 conf_file = _plugins[(*itt)];
-                if(conf_file.c_str()[0] != '/')
+                if(conf_file.c_str()[0] != '/') {
                     conf_file = root_dir + conf_file;
+                }
                 Plugin p(conf_file);
                 cout << "\tPlugin " << p.getInfo() << endl;
-            } else if (_workflows.find(id) != _workflows.end()) {
+            } else if(_workflows.find(id) != _workflows.end()) {
                 conf_file = _workflows[(*itt)];
-                if(conf_file.c_str()[0] != '/')
+                if(conf_file.c_str()[0] != '/') {
                     conf_file = root_dir + conf_file;
+                }
                 Workflow w(conf_file);
                 cout << "\tWorkflow " << w.getInfo() << endl;
             }
         }
     }
 }
-        
-bool Catalog::hasPlugin(const std::string& id) {
+
+bool Catalog::hasPlugin(const std::string &id)
+{
     return (_plugins.find(id) != _plugins.end());
 }
 
-bool Catalog::hasWorkflow(const std::string& id) {
+bool Catalog::hasWorkflow(const std::string &id)
+{
     return (_workflows.find(id) != _workflows.end());
 }
 
-int Catalog::addSuiteMember(const string& suite, const string& id) {
+int Catalog::addSuiteMember(const string &suite, const string &id)
+{
     int i;
-    for(i=0; i<_suites.size(); i++) {
+    for(i = 0; i < _suites.size(); i++) {
         if(_suites[i].id == suite) {
             _suites[i].members.push_back(id);
             break;
@@ -133,7 +139,8 @@ int Catalog::addSuiteMember(const string& suite, const string& id) {
     return 0;
 }
 
-int Catalog::addPlugin(const string& suite, const string& id, const string& conf_file) {
+int Catalog::addPlugin(const string &suite, const string &id, const string &conf_file)
+{
     if(_plugins.find(id) != _plugins.end()) {
         DBG_LOG << " Plugin ID " << id << " already exists" << endl;
         return -1;
@@ -144,7 +151,8 @@ int Catalog::addPlugin(const string& suite, const string& id, const string& conf
     return 0;
 }
 
-int Catalog::addWorkflow(const string& suite, const string& id, const string& conf_file) {
+int Catalog::addWorkflow(const string &suite, const string &id, const string &conf_file)
+{
     if(_workflows.find(id) != _workflows.end()) {
         DBG_LOG << " Workflow ID " << id << " already exists" << endl;
         return -1;
@@ -157,9 +165,8 @@ int Catalog::addWorkflow(const string& suite, const string& id, const string& co
 
 void Catalog::listPlugins()
 {
-    for(map <string, string>::iterator it = _plugins.begin(); it != _plugins.end(); it++)
-    {
-        cout <<(*it).first << " " << (*it).second << endl;
+    for(map <string, string>::iterator it = _plugins.begin(); it != _plugins.end(); it++) {
+        cout << (*it).first << " " << (*it).second << endl;
     }
     cout << "listPlugins" << endl;
 }
@@ -167,84 +174,82 @@ void Catalog::listPlugins()
 
 void Catalog::listWorkflows()
 {
-    for(map <string, string>::iterator it = _workflows.begin(); it != _workflows.end(); it++)
-    {
-        cout <<(*it).first << " " << (*it).second << endl;
+    for(map <string, string>::iterator it = _workflows.begin(); it != _workflows.end(); it++) {
+        cout << (*it).first << " " << (*it).second << endl;
     }
 }
 
-void Catalog::getPluginIDs(vector <string>& ids) {
-    for(map <string, string>::iterator it = _plugins.begin(); it != _plugins.end(); it++)
-    {
+void Catalog::getPluginIDs(vector <string>& ids)
+{
+    for(map <string, string>::iterator it = _plugins.begin(); it != _plugins.end(); it++) {
         ids.push_back((*it).first);
     }
 }
 
-void Catalog::getWorkflowIDs(vector<string>& ids) {
-    for(map <string, string>::iterator it = _workflows.begin(); it != _workflows.end(); it++)
-    {
+void Catalog::getWorkflowIDs(vector<string>& ids)
+{
+    for(map <string, string>::iterator it = _workflows.begin(); it != _workflows.end(); it++) {
         ids.push_back((*it).first);
     }
 }
 
-string Catalog::getPluginFile(const string& root_dir, const string& id) {
+string Catalog::getPluginFile(const string &root_dir, const string &id)
+{
     if(_plugins.find(id) == _plugins.end()) {
         DBG_LOG << "Getting config file for plugin " << id << endl;
         throw __FILE__ " Catalog::getPluginFile(): invalid Plugin ID";
     }
 
     string config_file = _plugins[id];
-    if(config_file.c_str()[0] != '/')
+    if(config_file.c_str()[0] != '/') {
         config_file = root_dir + config_file;
+    }
     return config_file;
 }
 
-string Catalog::getWorkflowFile(const string& root_dir, const string& id) {
+string Catalog::getWorkflowFile(const string &root_dir, const string &id)
+{
     if(_workflows.find(id) == _workflows.end()) {
         DBG_LOG << "Getting config file for workflow " << id << endl;
         throw __FILE__ " Catalog::getWorkflowFile(): invalid Workflow ID";
     }
 
     string config_file = _workflows[id];
-    if(config_file.c_str()[0] != '/')
+    if(config_file.c_str()[0] != '/') {
         config_file = root_dir + config_file;
+    }
     return config_file;
 }
 
-void Catalog::buildXml(const string& conf_file)
+void Catalog::buildXml(const string &conf_file)
 {
     xml_document<> doc;
     xml_node<>* root = doc.allocate_node(node_element, "suites");
     doc.append_node(root);
-    for( std::vector< Suite >::iterator suite = _suites.begin(); suite != _suites.end(); suite++)
-    {
+    for(std::vector< Suite >::iterator suite = _suites.begin(); suite != _suites.end(); suite++) {
         xml_node<>* child = doc.allocate_node(node_element, "suite");
-        child->append_attribute(doc.allocate_attribute("label", (*suite).label.c_str())); 
-        child->append_attribute(doc.allocate_attribute("id", (*suite).id.c_str())); 
+        child->append_attribute(doc.allocate_attribute("label", (*suite).label.c_str()));
+        child->append_attribute(doc.allocate_attribute("id", (*suite).id.c_str()));
         bool plugin_suite = false;
-        for(std::vector< std::string >::iterator member = (*suite).members.begin(); member != (*suite).members.end(); member++)
-        {
+        for(std::vector< std::string >::iterator member = (*suite).members.begin(); member != (*suite).members.end(); member++) {
             xml_node<>* cc;
-            if(_plugins.find(*member) == _plugins.end())
-            {
+            if(_plugins.find(*member) == _plugins.end()) {
                 cc = doc.allocate_node(node_element, "workflow");
                 cc->append_attribute(doc.allocate_attribute("id", (*member).c_str()));
                 cc->append_attribute(doc.allocate_attribute("file", _workflows[(*member)].c_str()));
-            }
-            else
-            {
+            } else {
                 cc = doc.allocate_node(node_element, "plugin");
                 cc->append_attribute(doc.allocate_attribute("id", (*member).c_str()));
                 cc->append_attribute(doc.allocate_attribute("file", _plugins[(*member)].c_str()));
             }
 
             child->append_node(cc);
-            
+
         }
         root->append_node(child);
     }
     ofstream ifs(conf_file.c_str());
-    if (!ifs.is_open()) {
+    if(!ifs.is_open()) {
         throw __FILE__ " getFileContent(): Cannot open file";
     }
     ifs << doc;

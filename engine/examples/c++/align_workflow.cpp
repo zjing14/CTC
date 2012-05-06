@@ -6,10 +6,11 @@
 #include <stdlib.h>
 using namespace std;
 
-// A simple example workflow that maps paired-end reads with BWA 
+// A simple example workflow that maps paired-end reads with BWA
 // and converts the output to the BAM format.
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 
     if(argc != 2) {
         cerr << "Usage: " << argv[0] << " engine_dir " << endl;
@@ -22,11 +23,11 @@ int main(int argc, char** argv) {
         Workflow workflow;
 
         // Construct inputs of the workflow
-        Parameter p1(DATA_FILE, "", "fastq", ""); 
+        Parameter p1(DATA_FILE, "", "fastq", "");
         workflow.addInput("in_read1", p1);
-        Parameter p2(DATA_FILE, "", "fastq", ""); 
+        Parameter p2(DATA_FILE, "", "fastq", "");
         workflow.addInput("in_read2", p2);
-        Parameter p3(DATA_FILE, "", "bwa_index", ""); 
+        Parameter p3(DATA_FILE, "", "bwa_index", "");
         workflow.addInput("in_genome", p3);
 
         // Construct steps of the workflow
@@ -57,7 +58,7 @@ int main(int argc, char** argv) {
         workflow.addStep(s_tobam);
 
         // Construct outputs of the workflow
-        Parameter p4(DATA_FILE, "$tobam.output_bam", "bam", ""); 
+        Parameter p4(DATA_FILE, "$tobam.output_bam", "bam", "");
         workflow.addOutput("output", p4);
 
         Engine engine(engine_dir);
@@ -71,7 +72,7 @@ int main(int argc, char** argv) {
 
         engine.executeWorkflow(workflow, paras, true);
 
-    } catch (const char* errmsg) {
+    } catch(const char *errmsg) {
         cerr << errmsg << endl;
         return -1;
     }

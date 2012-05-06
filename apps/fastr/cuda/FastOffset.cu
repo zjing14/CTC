@@ -42,22 +42,26 @@ cudaError_t cudaRes;
 }
 
 
-__device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte* quals, byte* refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup, int quitAboveThisValue) {
+__device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte *quals, byte *refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup, int quitAboveThisValue)
+{
     int sum = 0;
-    for (int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++ ) {
-        if ( refIndex >= refLen ) {
+    for(int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++) {
+        if(refIndex >= refLen) {
             sum += MAX_QUAL;
-            if ( sum > quitAboveThisValue )
+            if(sum > quitAboveThisValue) {
                 return sum;
+            }
         } else {
             byte refChr = refSeq[refIndex];
             byte readChr = readSeq[readIndex];
-            if ( !ch_lookup[readChr] || !ch_lookup[refChr] )
-                continue; // do not count Ns/Xs/etc ?
-            if ( (readChr != refChr) ) {
+            if(!ch_lookup[readChr] || !ch_lookup[refChr]) {
+                continue;    // do not count Ns/Xs/etc ?
+            }
+            if((readChr != refChr)) {
                 sum += (int)quals[readIndex];
-                if ( sum > quitAboveThisValue )
+                if(sum > quitAboveThisValue) {
                     return sum;
+                }
             }
         }
     }
@@ -65,17 +69,19 @@ __device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte* quals, b
 }
 
 
-__device__ int mismatchQualitySumIgnoreCigar_CUDA(byte *readSeq, byte* quals, byte* refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup) {
+__device__ int mismatchQualitySumIgnoreCigar_CUDA(byte *readSeq, byte *quals, byte *refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup)
+{
     int sum = 0;
-    for (int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++ ) {
-        if ( refIndex >= refLen ) {
+    for(int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++) {
+        if(refIndex >= refLen) {
             sum += MAX_QUAL;
         } else {
             byte refChr = refSeq[refIndex];
             byte readChr = readSeq[readIndex];
-            if ( !ch_lookup[readChr] || !ch_lookup[refChr] )
-                continue; // do not count Ns/Xs/etc ?
-            if ( (readChr != refChr) ) {
+            if(!ch_lookup[readChr] || !ch_lookup[refChr]) {
+                continue;    // do not count Ns/Xs/etc ?
+            }
+            if((readChr != refChr)) {
                 sum += (int)quals[readIndex];
             }
         }
@@ -83,8 +89,8 @@ __device__ int mismatchQualitySumIgnoreCigar_CUDA(byte *readSeq, byte* quals, by
     return sum;
 }
 
-__global__ void findBestOffset_CUDA( byte *ref_g,  byte *readSeq_g,  byte *quals_g,  int *ReadLength_g,  int *originalAlignment_g,  int *bestScore_g, 
-        int *bestIndex_g,  char *ch_lookup, int iter_num,  int *n_consensus, int *altReads,  int *refLens)
+__global__ void findBestOffset_CUDA(byte *ref_g,  byte *readSeq_g,  byte *quals_g,  int *ReadLength_g,  int *originalAlignment_g,  int *bestScore_g,
+                                    int *bestIndex_g,  char *ch_lookup, int iter_num,  int *n_consensus, int *altReads,  int *refLens)
 {
     int b = blockIdx.x;
     int i = threadIdx.x;
@@ -99,11 +105,9 @@ __global__ void findBestOffset_CUDA( byte *ref_g,  byte *readSeq_g,  byte *quals
     int n_refLen = 0;
     int readSeq_offset = 0;
 
-    for(int t = 0; t < iter_num; t++)
-    {
-        for(int k =0; k < n_consensus[t]; k++)
-        {
-            if(b < altReads[t]){
+    for(int t = 0; t < iter_num; t++) {
+        for(int k = 0; k < n_consensus[t]; k++) {
+            if(b < altReads[t]) {
 
                 score[i] = LONG_MAX;
                 score[ii] = LONG_MAX;
@@ -118,49 +122,46 @@ __global__ void findBestOffset_CUDA( byte *ref_g,  byte *readSeq_g,  byte *quals
                 int *bestScore = bestScore_g + score_offset;
                 int *bestIndex = bestIndex_g + score_offset;
 
-                if(i==0)
-                {
+                if(i == 0) {
                     bestScore[b] = mismatchQualitySumIgnoreCigar_CUDA(GetreadSeq(b), Getquals(b), ref, refLens[n_refLen], originalAlignment[b], ReadLength[b], ch_lookup);
                     bestIndex[b] = originalAlignment[b];
                 }
 
                 __syncthreads();
 
-                if(i < originalAlignment[b])
+                if(i < originalAlignment[b]) {
                     score[i] = mismatchQualitySumIgnoreCigar2_CUDA(GetreadSeq(b), Getquals(b), ref, refLens[n_refLen], i, ReadLength[b], ch_lookup, bestScore[b]);
-                if(ii < originalAlignment[b])
+                }
+                if(ii < originalAlignment[b]) {
                     score[ii] = mismatchQualitySumIgnoreCigar2_CUDA(GetreadSeq(b), Getquals(b), ref, refLens[n_refLen], ii, ReadLength[b], ch_lookup, bestScore[b]);
+                }
 
                 __syncthreads();
 
-                for(unsigned int s=blockDim.x/2; s>0; s>>=1) 
-                {
-                    if (i < s)
-                    {
-                        if(score[i] > score[i + s] || ( scoreindex[i+s] < scoreindex[i] && score[i] == score[i + s])){
-                            score[i] = score[i+s];
-                            scoreindex[i] = scoreindex[i+s];
+                for(unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
+                    if(i < s) {
+                        if(score[i] > score[i + s] || (scoreindex[i + s] < scoreindex[i] && score[i] == score[i + s])) {
+                            score[i] = score[i + s];
+                            scoreindex[i] = scoreindex[i + s];
                         }
-                        if(score[ii] > score[ii + s] || ( scoreindex[ii+s] < scoreindex[ii] && score[ii] == score[ii + s])){
+                        if(score[ii] > score[ii + s] || (scoreindex[ii + s] < scoreindex[ii] && score[ii] == score[ii + s])) {
                             score[ii] = score[ii + s];
-                            scoreindex[ii] = scoreindex[ii+s];
+                            scoreindex[ii] = scoreindex[ii + s];
                         }
                     }
                     __syncthreads();
                 }
 
-                if(i == 0){
-                    if (score[0] > score[blockDim.x] || (scoreindex[blockDim.x] < scoreindex[0] && score[0] ==  score[blockDim.x]))
-                    {
+                if(i == 0) {
+                    if(score[0] > score[blockDim.x] || (scoreindex[blockDim.x] < scoreindex[0] && score[0] ==  score[blockDim.x])) {
                         score[0] = score[blockDim.x];
                         scoreindex[0] = scoreindex[blockDim.x];
                     }
-                    if (bestScore[b] > score[0])
-                    {
+                    if(bestScore[b] > score[0]) {
                         bestScore[b] = score[0];
                         bestIndex[b] = scoreindex[0];
                     }
-                } 
+                }
 
                 __syncthreads();
 
@@ -171,37 +172,35 @@ __global__ void findBestOffset_CUDA( byte *ref_g,  byte *readSeq_g,  byte *quals
                 int maxPossibleStart = refLens[n_refLen] - ReadLength[b];
                 maxPossibleStart = maxPossibleStart - (originalAlignment[b] + 1);
 
-                if(i <= maxPossibleStart)
+                if(i <= maxPossibleStart) {
                     score[i] = mismatchQualitySumIgnoreCigar2_CUDA(GetreadSeq(b), Getquals(b), ref, refLens[n_refLen], i + originalAlignment[b] + 1, ReadLength[b], ch_lookup, bestScore[b]);
-                if(ii <= maxPossibleStart)
+                }
+                if(ii <= maxPossibleStart) {
                     score[ii] = mismatchQualitySumIgnoreCigar2_CUDA(GetreadSeq(b), Getquals(b), ref, refLens[n_refLen], ii + originalAlignment[b] + 1, ReadLength[b], ch_lookup, bestScore[b]);
+                }
 
                 __syncthreads();
 
-                for(unsigned int s=blockDim.x/2; s>0; s>>=1) 
-                {
-                    if (i < s)
-                    {
-                        if(score[i] > score[i + s] || ( scoreindex[i+s] < scoreindex[i] && score[i] == score[i + s])){
-                            score[i] = score[i+s];
-                            scoreindex[i] = scoreindex[i+s];
+                for(unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
+                    if(i < s) {
+                        if(score[i] > score[i + s] || (scoreindex[i + s] < scoreindex[i] && score[i] == score[i + s])) {
+                            score[i] = score[i + s];
+                            scoreindex[i] = scoreindex[i + s];
                         }
-                        if(score[ii] > score[ii + s] || ( scoreindex[ii+s] < scoreindex[ii] && score[ii] == score[ii + s])){
+                        if(score[ii] > score[ii + s] || (scoreindex[ii + s] < scoreindex[ii] && score[ii] == score[ii + s])) {
                             score[ii] = score[ii + s];
-                            scoreindex[ii] = scoreindex[ii+s];
+                            scoreindex[ii] = scoreindex[ii + s];
                         }
                     }
                     __syncthreads();
                 }
 
-                if(i == 0){
-                    if (score[0] > score[blockDim.x] || (scoreindex[blockDim.x] < scoreindex[0] && score[0] ==  score[blockDim.x]))
-                    {
+                if(i == 0) {
+                    if(score[0] > score[blockDim.x] || (scoreindex[blockDim.x] < scoreindex[0] && score[0] ==  score[blockDim.x])) {
                         score[0] = score[blockDim.x];
                         scoreindex[0] = scoreindex[blockDim.x];
                     }
-                    if (bestScore[b] > score[0])
-                    {
+                    if(bestScore[b] > score[0]) {
                         bestScore[b] = score[0];
                         bestIndex[b] = scoreindex[0] + originalAlignment[b] + 1;
                     }
@@ -209,9 +208,9 @@ __global__ void findBestOffset_CUDA( byte *ref_g,  byte *readSeq_g,  byte *quals
             }
             ref_offset += refLens[n_refLen];
             n_refLen += 1;
-            score_offset += altReads[t]; 
+            score_offset += altReads[t];
         }
-        readSeq_offset += altReads[t] * MAX_ReadLength; 
+        readSeq_offset += altReads[t] * MAX_ReadLength;
         quals_offset += MAX_ReadLength * altReads[t];
         ReadLength_offset += altReads[t];
         originalAlignment_offset += altReads[t];
@@ -254,7 +253,7 @@ void free_resource()
 void clean_cuda(int iter_num, const size_t globalWorkSize,  const size_t localWorkSize, int *BestScore, int *ScoreIndex)
 {
     cudaError_t cudaRes;
-    findBestOffset_CUDA <<<globalWorkSize, localWorkSize>>> ( dref,  dreadSeq,  dquals, dReadLength,  doriginalAlignment, 
+    findBestOffset_CUDA <<< globalWorkSize, localWorkSize>>> (dref,  dreadSeq,  dquals, dReadLength,  doriginalAlignment,
             dBestScore, dScoreIndex,  dch_lookup, iter_num,  dn_consensus, daltReads,  drefLens);
     cudaDeviceSynchronize();
     CHECKERR1();

@@ -1,29 +1,14 @@
 /**********************************************************************************
- * Copyright (c) 2012 by Virginia Polytechnic Institute and State University. 
- * 
+ * Copyright (c) 2012 by Virginia Polytechnic Institute and State University.
+ *
  * The local realignment portion of the code is derived from the Indel Realigner
  * code of the GATK project, and the I/O of bam files is extended from the
  * bamtools package, which is distributed under the MIT license. The licenses of
  * GATK and bamtools are included below.
- * 
- * *********** GATK LICENSE ***************
- * Copyright (c) 2010, The Broad Institute 
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is furnished to do
- * so, subject to the following conditions: 
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software. 
- * 
- * *********** BAMTOOLS LICENSE ***************
- * The MIT License
- * 
- * Copyright (c) 2009-2010 Derek Barnett, Erik Garrison, Gabor Marth, Michael Stromberg
- * 
+ * *********** GATK LICENSE ***************
+ * Copyright (c) 2010, The Broad Institute
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -32,8 +17,23 @@
  * so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software. 
- * 
+ * all copies or substantial portions of the Software.
+ *
+ * *********** BAMTOOLS LICENSE ***************
+ * The MIT License
+ *
+ * Copyright (c) 2009-2010 Derek Barnett, Erik Garrison, Gabor Marth, Michael Stromberg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do
+ * so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -112,10 +112,10 @@ void SWPairwiseAlignment::align(const byte a[], unsigned int an, const byte b[],
 
     calculateMatrix(a, an, b, bn, sw, btrack);
 #ifdef PRINT_SCOREMATRIX
-    for(int i = 0; i < (n + 1); i++)
-    { 
-        for(int j = 0; j <(m + 1); j++)
+    for(int i = 0; i < (n + 1); i++) {
+        for(int j = 0; j < (m + 1); j++) {
             cout << sw[i * (m + 1) + j] << " ";
+        }
         cout << endl;
     }
 #endif
@@ -341,19 +341,19 @@ void SWPairwiseAlignment::calculateCigar(int n, int m, double sw[], int btrack[]
 
         // move to next best location in the sw matrix:
         switch(new_state) {
-            case MSTATE:
-                data_offset -= (m + 2);
-                p1--;
-                p2--;
-                break; // move back along the diag in th esw matrix
-            case ISTATE:
-                data_offset -= step_length;
-                p2 -= step_length;
-                break; // move left
-            case DSTATE:
-                data_offset -= (m + 1) * step_length;
-                p1 -= step_length;
-                break; // move up
+        case MSTATE:
+            data_offset -= (m + 2);
+            p1--;
+            p2--;
+            break; // move back along the diag in th esw matrix
+        case ISTATE:
+            data_offset -= step_length;
+            p2 -= step_length;
+            break; // move left
+        case DSTATE:
+            data_offset -= (m + 1) * step_length;
+            p1 -= step_length;
+            break; // move up
         }
 
 
@@ -391,8 +391,9 @@ void SWPairwiseAlignment::calculateCigar(int n, int m, double sw[], int btrack[]
 
     reverse(lce.begin(), lce.end());
 #ifdef PRINT_BACKTRACE
-    for( vector<CigarOp>::iterator t = lce.begin(); t != lce.end(); t++)
+    for(vector<CigarOp>::iterator t = lce.begin(); t != lce.end(); t++) {
         printf("(%c %d)", t->Type, t->Length);
+    }
     printf("\n");
 #endif
     //Collections.reverse(lce);
@@ -403,18 +404,18 @@ CigarOp SWPairwiseAlignment::makeElement(int state, int segment_length)
 {
     char o = '\0';
     switch(state) {
-        case MSTATE:
-            o = 'M';
-            break;
-        case ISTATE:
-            o = 'I';
-            break;
-        case DSTATE:
-            o = 'D';
-            break;
-        case 'S':
-            o = 'S';
-            break;
+    case MSTATE:
+        o = 'M';
+        break;
+    case ISTATE:
+        o = 'I';
+        break;
+    case DSTATE:
+        o = 'D';
+        break;
+    case 'S':
+        o = 'S';
+        break;
     }
     return CigarOp(o, segment_length);
 }

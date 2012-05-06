@@ -7,7 +7,8 @@
 #include <stdio.h>
 using namespace std;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     if(argc != 3) {
         cerr << "Usage: " << argv[0] << " <engine_root> <plugin_id>" << endl;
         return -1;
@@ -16,12 +17,13 @@ int main(int argc, char** argv) {
     Engine engine(argv[1]);
     string id = argv[2];
 
-    Catalog* catalog = Catalog::instance();
+    Catalog *catalog = Catalog::instance();
     string suite_id, name, version, description;
 
     try {
-        if(catalog->hasPlugin(id))
+        if(catalog->hasPlugin(id)) {
             throw __FILE__ " Plugin with the same id exists";
+        }
 
         cout << "Suite: ";
         getline(cin, suite_id);
@@ -53,7 +55,7 @@ int main(int argc, char** argv) {
         catalog->updateConfigFile();
 
         cout << "A template of the plugin has been placed in " << conf_file << endl;
-    } catch (char* err_msg) {
+    } catch(char *err_msg) {
         cerr << err_msg << endl;
     }
 

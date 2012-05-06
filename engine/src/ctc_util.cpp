@@ -13,56 +13,63 @@
 #include <time.h>
 using namespace std;
 
-Parameter::Parameter(int type, const string& value, const string& format, const string& label) {
-	this->para_type = type;	
-	this->val =  value;
-	this->format = format;
-	this->label = label;
+Parameter::Parameter(int type, const string &value, const string &format, const string &label)
+{
+    this->para_type = type;
+    this->val =  value;
+    this->format = format;
+    this->label = label;
 }
 
-string trimString(const string& str) {
+string trimString(const string &str)
+{
     string space(" \t\n\r");
     size_t pos = str.find_first_not_of(space);
     size_t pos1 = str.find_last_not_of(space);
-	return str.substr(pos, pos1 - pos + 1);
+    return str.substr(pos, pos1 - pos + 1);
 }
 
 // The memory pointer allocated by this function needs to be released by the caller.
-char* getFileContent(const string& file) {
+char *getFileContent(const string &file)
+{
     ifstream ifs(file.c_str());
-    if (!ifs.is_open()) {
+    if(!ifs.is_open()) {
         DBG_LOG << "Opening file: " << file << endl;
         throw __FILE__ " getFileContent(): Cannot open file";
     }
-    ifs.seekg (0, ios::end);
+    ifs.seekg(0, ios::end);
     int size = ifs.tellg();
     char *memblock = new char [size + 1];
-    ifs.seekg (0, ios::beg);
-    ifs.read (memblock, size);
-    ifs.close(); 
+    ifs.seekg(0, ios::beg);
+    ifs.read(memblock, size);
+    ifs.close();
     memblock[size] = '\0';
     return memblock;
 }
 
-int createDir(const string& path){
+int createDir(const string &path)
+{
     int rval;
     struct stat stat_buf;
     mode_t mode = 0x1fd; // mode 775
-    if ((rval = mkdir( path.c_str(), mode )) == -1 && errno == EEXIST) {
-        stat( path.c_str(), &stat_buf );
-        return S_ISDIR( stat_buf.st_mode );
+    if((rval = mkdir(path.c_str(), mode)) == -1 && errno == EEXIST) {
+        stat(path.c_str(), &stat_buf);
+        return S_ISDIR(stat_buf.st_mode);
     }
     return rval == 0;
 }
 
-int removeDir(const string& path){
-    if(rmdir(path.c_str()))
+int removeDir(const string &path)
+{
+    if(rmdir(path.c_str())) {
         return -1;
+    }
     return 0;
 }
 
 // Require non-empty prefix
-string getTmpDir(const string& prefix) {
+string getTmpDir(const string &prefix)
+{
     string temp_name = prefix;
     if(prefix.c_str()[prefix.length() - 1] != '/') {
         temp_name += "/";
@@ -72,47 +79,56 @@ string getTmpDir(const string& prefix) {
     char dir_name[_MAX_PATH];
     snprintf(dir_name, temp_name.length(), "%s", temp_name.c_str());
 
-    if(mkdtemp(dir_name) == NULL) 
+    if(mkdtemp(dir_name) == NULL) {
         throw __FILE__ " getTmpDir(): Error creating temporary dir";
+    }
 
     return dir_name;
 }
 
-string getCurrentDir() {
+string getCurrentDir()
+{
     char org_dir[_MAX_PATH];
-    if(getcwd(org_dir, sizeof(org_dir)) == NULL)
+    if(getcwd(org_dir, sizeof(org_dir)) == NULL) {
         throw __FILE__ " getCurrentDir(): Error getting current dir";
+    }
     return org_dir;
 }
 
-int changeCurrentDir(const string& dir) {
-    if(chdir(dir.c_str())) 
+int changeCurrentDir(const string &dir)
+{
+    if(chdir(dir.c_str())) {
         return -1;
-    else 
+    } else {
         return 0;
+    }
 }
 
-int moveFile(const std::string source, const std::string dest) {
-    if(rename(source.c_str(), dest.c_str()))
+int moveFile(const std::string source, const std::string dest)
+{
+    if(rename(source.c_str(), dest.c_str())) {
         return -1;
-    else
+    } else {
         return 0;
+    }
 }
 
-string getCurrentTime() {	
-	time_t t;
-	time(&t);
+string getCurrentTime()
+{
+    time_t t;
+    time(&t);
 
-	string asc_time = ctime(&t);
+    string asc_time = ctime(&t);
 
-	return asc_time.substr(0, asc_time.length() - 1);
+    return asc_time.substr(0, asc_time.length() - 1);
 }
 
-string resolveWord(string word, map <string, string>& exec_conf, map<string, string>& sys_conf) {
+string resolveWord(string word, map <string, string>& exec_conf, map<string, string>& sys_conf)
+{
     string result;
 
     // trim word
-    word.erase(remove_if(word.begin(), word.end(), (int(*)(int))isspace), word.end());
+    word.erase(remove_if(word.begin(), word.end(), (int( *)(int))isspace), word.end());
     // '"' only allowed in the beginning and end of a word
     if(word.c_str()[0] == '"') {
         size_t pos = word.find('"', 1);
@@ -128,13 +144,14 @@ string resolveWord(string word, map <string, string>& exec_conf, map<string, str
         size_t pos = word.find('$', current_pos);
         result += word.substr(current_pos, pos - current_pos);
 
-        if(pos == string::npos) 
+        if(pos == string::npos) {
             break;
+        }
 
         string var_name;
         size_t pos1;
         if(word.c_str()[pos + 1] == '{') {
-            pos1= word.find('}', pos+1);
+            pos1 = word.find('}', pos + 1);
             if(pos1 == string::npos) {
                 DBG_LOG << "Error parsing variable " << word << endl;
                 throw __FILE__ " Error resolving words";
@@ -143,21 +160,21 @@ string resolveWord(string word, map <string, string>& exec_conf, map<string, str
             var_name = word.substr(pos + 2, pos1 - pos - 2);
             pos1++;
         } else {
-            for(pos1=pos+1; pos1<word.length(); pos1++) {
+            for(pos1 = pos + 1; pos1 < word.length(); pos1++) {
                 char ch = word.c_str()[pos1];
-                if  (ch == '/' || ch == '\\' || ch == '$') {
+                if(ch == '/' || ch == '\\' || ch == '$') {
                     break;
-                }  
-            } 
+                }
+            }
             var_name = word.substr(pos + 1, pos1 - pos - 1);
         }
 
         if(exec_conf.find(var_name) != exec_conf.end()) {
             result += exec_conf[var_name];
-        } else if (sys_conf.find(var_name) != sys_conf.end()) {
+        } else if(sys_conf.find(var_name) != sys_conf.end()) {
             result += sys_conf[var_name];
         } else {
-            char* env = getenv(var_name.c_str());
+            char *env = getenv(var_name.c_str());
             if(env == NULL) {
                 DBG_LOG << "Error resolving variable: " << var_name << endl;
                 throw __FILE__ " Error resolving variables";
@@ -170,7 +187,8 @@ string resolveWord(string word, map <string, string>& exec_conf, map<string, str
     return result;
 }
 
-string resolveConditional(string str, map <string, string>& exec_conf, map<string, string>& sys_conf) {
+string resolveConditional(string str, map <string, string>& exec_conf, map<string, string>& sys_conf)
+{
     size_t pos = str.find('?');
     if(pos == string::npos) {
         DBG_LOG << "Missing \'?\' in the conditional" << endl;
@@ -185,7 +203,7 @@ string resolveConditional(string str, map <string, string>& exec_conf, map<strin
         if(pos1 == string::npos) {
             has_operator = false;
         }
-    } 
+    }
     string value = str.substr(pos + 1);
 
     bool eval = false;
@@ -193,7 +211,7 @@ string resolveConditional(string str, map <string, string>& exec_conf, map<strin
     if(has_operator) {
         string op = condition.substr(pos1, 2);
         string opn1 = condition.substr(0, pos1);
-        string opn2 = condition.substr(pos1+2);
+        string opn2 = condition.substr(pos1 + 2);
 
         opn1 = resolveWord(opn1, exec_conf, sys_conf);
         opn2 = resolveWord(opn2, exec_conf, sys_conf);
@@ -208,47 +226,52 @@ string resolveConditional(string str, map <string, string>& exec_conf, map<strin
 
     pos1 = value.find(":");
     if(pos1 != string::npos) {
-        if(eval) 
+        if(eval) {
             return resolveStream(value.substr(0, pos1 - 1), exec_conf, sys_conf);
-        else
+        } else {
             return resolveWord(value.substr(pos1 + 1), exec_conf, sys_conf);
+        }
     } else {
-        if(eval) 
+        if(eval) {
             return resolveStream(value.substr(0), exec_conf, sys_conf);
-        else
+        } else {
             return "";
+        }
     }
 }
 
-string resolveStream(string str, map <string, string>& exec_conf, map<string, string>& sys_conf) {
+string resolveStream(string str, map <string, string>& exec_conf, map<string, string>& sys_conf)
+{
     string result;
 
     string white(" \t\n\r");
     size_t current_pos = 0;
     while(true) {
-        if(white.find(str.c_str()[current_pos]) != string::npos)
+        if(white.find(str.c_str()[current_pos]) != string::npos) {
             result += " ";
+        }
 
         size_t pos, pos1;
         pos = str.find_first_not_of(white, current_pos);
-        if(pos == string::npos)
+        if(pos == string::npos) {
             break;
+        }
 
         bool conditional = false;
         if(str.c_str()[pos] == '[') {
             conditional = true;
-            pos1 = str.find(']', pos+1);
+            pos1 = str.find(']', pos + 1);
             if(pos1 == string::npos) {
                 DBG_LOG << "Missing \']\' in command: " << str << endl;
-                throw __FILE__ " error parsing command"; 
+                throw __FILE__ " error parsing command";
             }
-            result += resolveConditional(str.substr(pos+1, pos1-pos-1), exec_conf, sys_conf);
+            result += resolveConditional(str.substr(pos + 1, pos1 - pos - 1), exec_conf, sys_conf);
             current_pos = pos1 + 1;
-        } else if (str.c_str()[pos] == '"') { 
-            pos1 = str.find('"', pos+1);
+        } else if(str.c_str()[pos] == '"') {
+            pos1 = str.find('"', pos + 1);
             if(pos1 == string::npos) {
                 DBG_LOG << "Unpaired \" in command: " << str << endl;
-                throw __FILE__ " error parsing command"; 
+                throw __FILE__ " error parsing command";
             }
             result += str.substr(pos, pos1 - pos + 1);
             current_pos = pos1 + 1;

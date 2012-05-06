@@ -3,11 +3,12 @@
 #include <stdlib.h>
 using namespace std;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 
     if(argc < 3) {
         cerr << "Usage: " << argv[0] << " <engine_root_dir> listPlugins|listWorkflows|listSuites|queryPlugin|queryWorflow [id]" << endl;
-        exit(-1); 
+        exit(-1);
     }
 
     try {
@@ -17,16 +18,16 @@ int main(int argc, char** argv) {
 
         if(query_cmd == "listPlugins") {
             engine.listPlugins();
-        } else if (query_cmd == "listWorkflows") {
+        } else if(query_cmd == "listWorkflows") {
             engine.listWorkflows();
-        } else if (query_cmd == "listSuites") {
+        } else if(query_cmd == "listSuites") {
             engine.listSuites();
-        } else if (query_cmd == "queryPlugin") {
+        } else if(query_cmd == "queryPlugin") {
             if(argc < 4) {
                 throw " missing Plugin ID";
             }
             engine.queryPlugin(argv[3]);
-        } else if (query_cmd == "queryWorkflow") {
+        } else if(query_cmd == "queryWorkflow") {
             if(argc < 4) {
                 throw " missing Workflow ID";
             }
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
         } else {
             throw " invalid query commnd";
         }
-    } catch (const char* error) {
+    } catch(const char *error) {
         cerr << error << endl;
         exit(-1);
     }

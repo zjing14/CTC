@@ -5,48 +5,50 @@
 #include <string>
 #include <vector>
 
-class Suite {
-    public:
-        std::string label;
-        std::string id;
-        std::vector <std::string> members; // stored ids for plugins and workflows of this suite
+class Suite
+{
+public:
+    std::string label;
+    std::string id;
+    std::vector <std::string> members; // stored ids for plugins and workflows of this suite
 };
 
-class Catalog {
-    public:
-        static Catalog* instance();
-        int openConfigFile(const std::string& conf_file);
-        int updateConfigFile();
+class Catalog
+{
+public:
+    static Catalog *instance();
+    int openConfigFile(const std::string &conf_file);
+    int updateConfigFile();
 
-        void listPlugins();
-        void listWorkflows();
-        void listSuites(const std::string& root_dir);
+    void listPlugins();
+    void listWorkflows();
+    void listSuites(const std::string &root_dir);
 
-        int addPlugin(const std::string& suite, const std::string& id, const std::string& conf_file);
-        int addWorkflow(const std::string& suite, const std::string& id, const std::string& conf_file);
-        int addSuiteMember(const std::string& suite, const std::string& id);
-        bool hasPlugin(const std::string& id);
-        bool hasWorkflow(const std::string& id);
+    int addPlugin(const std::string &suite, const std::string &id, const std::string &conf_file);
+    int addWorkflow(const std::string &suite, const std::string &id, const std::string &conf_file);
+    int addSuiteMember(const std::string &suite, const std::string &id);
+    bool hasPlugin(const std::string &id);
+    bool hasWorkflow(const std::string &id);
 
-        void getPluginIDs(std::vector<std::string>& ids);
-        void getWorkflowIDs(std::vector<std::string>& ids);
+    void getPluginIDs(std::vector<std::string>& ids);
+    void getWorkflowIDs(std::vector<std::string>& ids);
 
-        std::string getPluginFile(const std::string& root_dir, const std::string& id);
-        std::string getWorkflowFile(const std::string& root_dir, const std::string& id);
-        void buildXml(const std::string& conf_file);
+    std::string getPluginFile(const std::string &root_dir, const std::string &id);
+    std::string getWorkflowFile(const std::string &root_dir, const std::string &id);
+    void buildXml(const std::string &conf_file);
 
-    protected:
-        std::vector <Suite> _suites;
-        std::map <std::string, std::string> _plugins;
-        std::map <std::string, std::string> _workflows;
+protected:
+    std::vector <Suite> _suites;
+    std::map <std::string, std::string> _plugins;
+    std::map <std::string, std::string> _workflows;
 
-    private:
-        Catalog() {}
-        Catalog(const Catalog&) {}
-        Catalog& operator=(const Catalog&) {}
+private:
+    Catalog() {}
+    Catalog(const Catalog &) {}
+    Catalog &operator=(const Catalog &) {}
 
-        static Catalog* _instance;
-        std::string _conf_file;
+    static Catalog *_instance;
+    std::string _conf_file;
 };
 
 #endif

@@ -8,11 +8,11 @@
 #include <string>
 #include <cstring>
 using namespace std;
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-//    Workflow w("imported_variant_calling.xml");
-//    w.buildXml("workflow_example_out.xml");
-//    w.print();
+    //    Workflow w("imported_variant_calling.xml");
+    //    w.buildXml("workflow_example_out.xml");
+    //    w.print();
     //Plugin p("plugin_example.xml");
     //p.printOutputs();
     if(argc < 2) {

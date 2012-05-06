@@ -5,20 +5,21 @@
 #include <fstream>
 #include <iostream>
 
-class Logger {
-    public:
-        static Logger* instance();
-        static std::ostream *logs;
-        static std::ofstream *logfs;
-        int openLogFile(const std::string& log_file);
-        void closeLogFile();
+class Logger
+{
+public:
+    static Logger *instance();
+    static std::ostream *logs;
+    static std::ofstream *logfs;
+    int openLogFile(const std::string &log_file);
+    void closeLogFile();
 
-    private:
-        Logger();
-        Logger(const Logger&) {}
-        Logger& operator=(const Logger&) {}
+private:
+    Logger();
+    Logger(const Logger &) {}
+    Logger &operator=(const Logger &) {}
 
-        static Logger* _instance;
+    static Logger *_instance;
 };
 
 #define LOG_MSG (*(Logger::logs)) << "[" << getCurrentTime() << "]\t"

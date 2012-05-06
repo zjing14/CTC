@@ -9,9 +9,10 @@
 
 using namespace std;
 
-void processCommands(Plugin* pp, vector <string>& strings);
+void processCommands(Plugin *pp, vector <string>& strings);
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     if(argc != 3) {
         cerr << "Usage: " << argv[0] << " <engine_root> <script>" << endl;
         return(-1);
@@ -20,7 +21,7 @@ int main(int argc, char** argv) {
     string engine_root = argv[1];
     string script_file = argv[2];
 
-    Workflow* wp = new Workflow();
+    Workflow *wp = new Workflow();
     vector <Plugin *> plugins;
     vector <WorkflowStep *> steps;
     string suite;
@@ -40,16 +41,18 @@ int main(int argc, char** argv) {
 
         string line;
         while(ifs.good()) {
-            getline(ifs, line); 
+            getline(ifs, line);
 
             size_t pos;
             if(line.c_str()[0] == '#') { // comment line
                 continue;
-            } if((pos = line.find(":=")) != string::npos) { // plugin definition
-                if(line.find("{", pos) == string::npos)
+            }
+            if((pos = line.find(":=")) != string::npos) { // plugin definition
+                if(line.find("{", pos) == string::npos) {
                     throw __FILE__ " Error parsing a plugin definition";
+                }
 
-                Plugin* pp = new Plugin();
+                Plugin *pp = new Plugin();
                 string plugin_id = trimString(line.substr(0, pos));
                 pp->setID(plugin_id);
                 Parameter p2(DATA_FILE, "", "", "");
@@ -66,19 +69,21 @@ int main(int argc, char** argv) {
                         matched = true;
                         break;
                     } else {
-                        if(line.find("$output") != string::npos || line.find("${output}") != string::npos)
+                        if(line.find("$output") != string::npos || line.find("${output}") != string::npos) {
                             has_output = true;
+                        }
                         cmd_strings.push_back(line);
                     }
                 }
-                if(matched)
+                if(matched) {
                     processCommands(pp, cmd_strings);
-                else
+                } else {
                     throw __FILE__ "Incomplete plugin definition";
+                }
 
                 plugins.push_back(pp);
-                
-                WorkflowStep* wsp = new WorkflowStep(PLUGIN, plugin_id, plugin_id);
+
+                WorkflowStep *wsp = new WorkflowStep(PLUGIN, plugin_id, plugin_id);
                 wsp->addInput("input", last_output);
                 wsp->addOutput("output");
                 steps.push_back(wsp);
@@ -87,23 +92,26 @@ int main(int argc, char** argv) {
                 step_idx++;
 
                 // Update last_output
-                if(has_output)
+                if(has_output) {
                     last_output = "$" + plugin_id + ".output";
+                }
             } else if((pos = line.find("=")) != string::npos) { // This is a variable definition
                 string name = trimString(line.substr(0, pos));
                 string value = trimString(line.substr(pos + 1));
                 // Remove quote
-                if(value.c_str()[0] == '"')
+                if(value.c_str()[0] == '"') {
                     value.erase(0, 1);
-                if(value.c_str()[value.length() - 1] == '"')
+                }
+                if(value.c_str()[value.length() - 1] == '"') {
                     value.erase(value.length() - 1, 1);
+                }
                 if(name == "WORKFLOW_ID") {
                     wp->setID(value);
-                } else if (name == "WORKFLOW_NAME") {
+                } else if(name == "WORKFLOW_NAME") {
                     wp->setName(value);
-                } else if (name == "WORKFLOW_VERSION") {
+                } else if(name == "WORKFLOW_VERSION") {
                     wp->setVersion(value);
-                } else if (name == "SUITE_ID") {
+                } else if(name == "SUITE_ID") {
                     suite = value;
                 } else {
                     wp->addVar(name, value);
@@ -116,10 +124,10 @@ int main(int argc, char** argv) {
         wp->addOutput("output", p4);
 
         // Save plugins and workflow
-        Catalog* cp = Catalog::instance();
+        Catalog *cp = Catalog::instance();
 
         vector <string> plugin_files;
-        for(int i=0; i<plugins.size(); i++) {
+        for(int i = 0; i < plugins.size(); i++) {
             string p_conf = SysConfig::instance()->getPluginDir() + "/" + plugins[i]->getID() + ".xml";
             if(cp->addPlugin(suite, plugins[i]->getID(), p_conf)) {
                 throw __FILE__ " Error adding plugin to the catalog";
@@ -127,10 +135,11 @@ int main(int argc, char** argv) {
             plugin_files.push_back(p_conf);
         }
         string w_conf = SysConfig::instance()->getWorkflowDir() + "/" + wp->getID() + ".xml";
-        if(cp->addWorkflow(suite, wp->getID(), w_conf))
+        if(cp->addWorkflow(suite, wp->getID(), w_conf)) {
             throw __FILE__ " Error adding workflow to the catalog";
+        }
 
-        for(int i=0; i<plugins.size(); i++) {
+        for(int i = 0; i < plugins.size(); i++) {
             DBG_LOG << "Writing to: " << plugin_files[i] << endl;
             plugins[i]->buildXml(plugin_files[i]);
         }
@@ -140,13 +149,13 @@ int main(int argc, char** argv) {
         // Update catalog.xml
         cp->updateConfigFile();
 
-    } catch (const char* err_msg) {
+    } catch(const char *err_msg) {
         cerr << err_msg << endl;
     }
 
     // Cleanup
     delete wp;
-    for(int i=0; i<plugins.size(); i++) {
+    for(int i = 0; i < plugins.size(); i++) {
         delete plugins[i];
         delete steps[i];
     }
@@ -154,11 +163,13 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void processCommands(Plugin* pp, vector <string>& strings) {
-    if(strings.empty())
+void processCommands(Plugin *pp, vector <string>& strings)
+{
+    if(strings.empty()) {
         throw __FILE__ " Found no commands in the plugin";
+    }
 
-    for(int i=0; i<strings.size(); i++) {
+    for(int i = 0; i < strings.size(); i++) {
         pp->addCommand(trimString(strings[i]));
     }
 }
