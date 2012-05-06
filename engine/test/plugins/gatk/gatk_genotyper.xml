@@ -1,0 +1,17 @@
+<tool id="gatk_genotyper" name="UnifiedGenometyper" version="1.4">
+    <description>Call variants using GATK UnifiedGenomeTyper</description>
+    <commands>
+        <command>
+            java -Xmx1g -jar /ctc-shared/software/gatk/GenomeAnalysisTK.jar -R $ref_genome -T UnifiedGenotyper -I $input_bam -o $output_vcf
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_genome" type="file" format="fasta" label="Reference genome"/>
+    </inputs>
+
+    <outputs>
+        <param format="vcf" type="file" name="output_vcf" label="Output variants (VCF)" />
+    </outputs>
+</tool>

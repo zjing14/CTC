@@ -1,0 +1,23 @@
+<plugin id="fastr" name="Fast IndelRealigner" version="1.0.1">
+    <description> Perform local realignment</description>
+    <commands>
+        <command>
+            sed 's/^/>/' $input_interval > ${input_interval}.fastr
+        </command>
+        <command>
+            IndelRealigner --threads $num_threads [$use_sw? --use-sw] $input_bam ${input_interval}.fastr $ref_file $output_bam 
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_file" type="file" format="genome_ref" label="Reference genome"/>
+        <param name="input_interval" type="file" format="gatk_interval" label="Genomic intervals"/>
+        <param name="num_threads" type="int" value="2" label="Number of threads"/>
+        <param name="use_sw" type="boolean" value="false" label="Use Smith-Waterman to compute consensus"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="Realigned bam files" />
+    </outputs>
+</plugin>

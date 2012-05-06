@@ -1,0 +1,18 @@
+<plugin id="realigner_target_creator" name="Realigner Target Creator" version="1.6">
+    <description>Create realigner targets</description>
+    <commands>
+        <command>
+            java -Xmx2g -jar /ctc-shared/software/gatk-1.6/GenomeAnalysisTK.jar -I $input_bam -R $ref_genome -T RealignerTargetCreator [$indels != ""? --known $indels] -o $output_intervals
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_genome" type="file" format="fasta" label="Reference genome"/>
+        <param name="indels" type="file" format="vcf" label="Known indels"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_intervals" type="file" format="intervals" label="GATK interval file" />
+    </outputs>
+</plugin>

@@ -1,0 +1,16 @@
+<plugin id="sam_to_bam" name="SAM to BAM" version="0.1.18">
+    <description>Convert SAM format to BAM format</description>
+    <commands>
+        <command>
+            samtools view -bS $input_sam > $output_bam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_sam" type="file" format="sam" label="SAM file"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="BAM file" />
+    </outputs>
+</plugin>

@@ -1,0 +1,46 @@
+Installation
+------------
+
+1) ./configure --prefix=/path/to/install-dir
+2) make
+3) make install
+4) Add executable path to your $PATH environment variable.
+export PATH=$PATH:/path/to/install-dir/bin
+
+Data Management
+---------------
+
+Users need to choose a root directory for OGE. An OGE application will initialize the root directory at the first run. There are two important configuration files in the OGE root. 
+
+1) ctc.ini
+This file stores important system parameters, such as debugging configuration and the temporary execution directory.
+
+2) catalog.xml
+This file stores meta information of all plugins and workflows in the repository.
+
+By defaults, plugin definitations are stored under plugins/ and workflow definiations are stored under workflows/.
+
+A pre-configured OGE root is stored in test/ with several widely used plugins and workflows defined.
+
+Getting Started
+---------------
+
+OGE can be accessed through three approaches.
+
+1) Command Line Interface
+
+There is a cli.py located in the cli/ dir. To use it:
+
+python cli/cli.py <oge_root>
+
+Once the cli is stared, type help to see all the supported commands. It provides a menu-driven tool to help user create the workflow.
+
+2) Programmable interface
+
+An example of how to use programmable interface to access OGE is given in examples/c++/align_workflow.cpp.
+
+3) BPipe-like script parsing. 
+
+OGE provides a tool called import_script to import BPipe-like annotated scripts. This tool will parse the input script and automatically generate plugins and workflows. An example of the annotated script is given in examples/annotated_scripts/script_example. To import from a script:
+
+import_script <oge_root> <script>

@@ -1,0 +1,16 @@
+<plugin id="index_bam" name="Index BAM with samtools" version="0.1.18">
+    <description>Index BAM file</description>
+    <commands>
+        <command>
+            samtools index $input_bam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bai" type="file" format="bai" label="BAI file" />
+    </outputs>
+</plugin>

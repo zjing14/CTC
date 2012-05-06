@@ -1,0 +1,19 @@
+<plugin id="bwa_aln" name="BWA Align" version="0.5.9">
+    <description>Align reads with BWA</description>
+    <commands>
+        <command>
+            bwa aln -t $num_threads $ref_genome $input_read -f $output [$use_gpu ? --use_gpu] [$threads != ""? --threads $threads]
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="ref_genome" type="file" format="bwt_index" label="Index of reference genome"/>
+        <param name="input_read" type="file" format="fastq" label="Input read file"/>
+        <param name="num_threads" type="int" value="4" label="Number of threads"/>
+        <param name="use_gpu" type="bool" value="false" label=""/>
+    </inputs>
+
+    <outputs>
+        <param name="output" type="file" format="sai" label="Output BWA alignments" />
+    </outputs>
+</plugin>

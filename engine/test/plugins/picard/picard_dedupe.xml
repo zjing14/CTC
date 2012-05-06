@@ -1,0 +1,35 @@
+<plugin id="picard_dedupe" name="Deduplication with Picard" version="0.1.18">
+    <description></description>
+    <commands>
+        <command>
+           java -Xmx1g -jar /ctc-shared/engine-test/executable/picard-tools-1.66/MarkDuplicates.jar 
+                                INPUT=$input_bam 
+                                OUTPUT=$output_bam
+                                [$comment != ""? COMMENT=$comment]
+                                METRICS_FILE=$output_metrics
+                                REMOVE_DUPLICATES=$remove_dup
+                                ASSUME_SORTED=$assume_sorted
+                                MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=$max_file_handles
+                                SORTING_COLLECTION_SIZE_RATIO=$sorting_ratio
+                                [$regex != ""? READ_NAME_REGEX=$regex]
+                                VALIDATION_STRINGENCY=LENIENT 
+                                OPTICAL_DUPLICATE_PIXEL_DISTANCE=$distance
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="Input BAM file"/>
+        <param name="comment" type="text" value="" format="" label="Comment(s) to include in the output file's header"/>
+        <param name="remove_dup" type="boolean" value="true" format="" label="Remove duplicates"/>
+        <param name="assume_sorted" type="boolean" value="false" format="" label="Assume that the input file is coordinate sorted"/>
+        <param name="max_file_handles" type="int" value="8000" format="" label="Maximum number of file handles to keep open when spilling read ends to disk"/>
+        <param name="sort_ratio" type="float" value="0.25" format="" label="This number, plus the maximum RAM available to the JVM, determine the memory footprint used by some of the sorting collections"/>
+        <param name="regex" type="text" value="" format="" label="Regular expression that can be used to parse read names in the incoming SAM file"/>
+        <param name="distance" type="int" value="100" format="" label="The maximum offset between two duplicte clusters in order to consider them optical duplicates"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="Output BAM file" />
+        <param name="output_metrics" type="file" value="${output_bam}.metrics" format="dup_metrics" label="Output duplication metrics" />
+    </outputs>
+</plugin>

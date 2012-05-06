@@ -1,0 +1,68 @@
+<workflow id="dindel_recursive" name="DIndel Variant Calling" version="1.0.1">
+    <description>Call variants from reads with DIndel</description>
+    <inputs>
+        <param name="input-read1" type="file" format="fastq" />
+        <param name="input-read2" type="file" format="fastq" />
+        <param name="ref_genome" type="file" format="bwtindex" />
+        <param name="ref_genome_fasta" type="file" format="bwtindex" />
+    </inputs>
+    <steps>
+        <step id="align" type="workflow" plugin_id="bwa_pe_sam" >
+            <inputs> 
+                <param name="input-read1" value="$input-read1" />
+                <param name="input-read2" value="$input-read2" />
+                <param name="ref_genome" value="$ref_genome" />
+            </inputs>
+            <outputs> 
+                <param name="output_sam" />
+            </outputs>
+        </step>
+        <step id="sort" type="plugin" plugin_id="sam_sorted_bam" >
+            <inputs>
+                <param name="input_sam" value="$align.output_sam" />
+            </inputs>
+            <outputs>
+                <param name="output_bam" />
+            </outpus>
+        </step>
+        <step id="index" type="plugin" plugin_id="index_bam" >
+            <inputs>
+                <param name="input_bam" value="${sort.output_bam}.bam" />
+            </inputs>
+            <outputs>
+                <param name="output_bai" />
+            </outpus>
+        </step>
+        <step id="create_target" type="plugin" plugin_id="realigner_target_creator" >
+            <inputs>
+                <param name="input_bam" value="${sort.output_bam}.bam" />
+                <param name="ref_genome" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_intervals" />
+            </outpus>
+        </step>
+        <step id="realign" type="plugin" plugin_id="fastr" >
+            <inputs>
+                <param name="input_bam" value="${sort.output_bam}.bam" />
+                <param name="input_interval" value="$create_target.output_intervals" />
+                <param name="ref_file" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_bam" />
+            </outpus>
+        </step>
+        <step id="call_variants" type="plugin" plugin_id="dindel" >
+            <inputs>
+                <param name="input_bam" value="$realign.output_bam" />
+                <param name="ref_genome" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_vcf" />
+            </outpus>
+        </step>
+    </steps>
+    <outputs>
+        <param name="output_vcf" type="file" format="vcf" value="$call_variants.output_vcf" />
+    </outputs>
+</workflow>

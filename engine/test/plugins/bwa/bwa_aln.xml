@@ -1,0 +1,36 @@
+<plugin id="bwa_aln" name="BWA Align" version="0.5.9">
+    <description>Align reads with BWA</description>
+    <commands>
+        <command>
+            bwa aln -n $max_diff -o $max_gapo -e $max_gape -d $ndel_tail -i $nindel_end [$seed_len != ""? -l $seed_len] -k $max_seed_diff -t $num_threads -M $mism_penalty -O $gapo_penalty -E $gape_penalty [$subopt_thres != ""? -R $subopt_thres] [$reverse? -c] [$no_iterative? -N] -q $trim_qual [$illumina13? -I] -B $barcode_len [$use_bam? -b$end] $ref_genome $input_read -f $output_sai
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="ref_genome" type="file" format="bwt_index" label="Index of reference genome"/>
+        <param name="input_read" type="file" format="fastq" label="Input read file"/>
+        <param name="max_diff" type="float" value="0.04" label="Maximum edit distance"/>
+        <param name="max_gapo" type="int" value="1" label="Maximum number of gap opens"/>
+        <param name="max_gape" type="int" value="-1" label="Maximum number of gap extensions"/>
+        <param name="ndel_tail" type="int" value="16" label="Disallow a long deletion within specified bp towards the 3'-end"/>
+        <param name="nindel_end" type="int" value="5" label="Disallow an indel within specified bp towards the ends"/>
+        <param name="seed_len" type="int" value="" label="Seed Length"/>
+        <param name="max_seed_diff" type="int" value="2" label="Maximum edit distance in the seed"/>
+        <param name="num_threads" type="int" value="4" label="Number of threads"/>
+        <param name="mism_penalty" type="int" value="3" label="Mismatch penalty"/>
+        <param name="gapo_penalty" type="int" value="11" label="Gap open penalty"/>
+        <param name="gape_penalty" type="int" value="4" label="Gap extention penalty"/>
+        <param name="subopt_thres" type="int" value="" label="Proceed with suboptimal alignments if there are no more than specified equally best hits."/>
+        <param name="reverse" type="boolean" value="false" label="Reverse query but not complement it"/>
+        <param name="no_iterative" type="boolean" value="false" label="Disable iterative search"/>
+        <param name="trim_qual" type="int" value="0" label="Parameter for read trimming"/>
+        <param name="illumina13" type="boolean" value="false" label="The input is in the Illumina 1.3+ read format"/>
+        <param name="barcode_len" type="int" value="0" label="Length of barcode starting from the 5'-end"/>
+        <param name="use_bam" type="boolean" value="false" label="Specify the input read is in the BAM format"/>
+        <param name="end" type="int" value="0" label="When the input read is in the BAM format, specify which reads to map"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_sai" type="file" format="sai" label="Output BWA alignments" />
+    </outputs>
+</plugin>

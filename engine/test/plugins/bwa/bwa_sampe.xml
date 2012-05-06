@@ -1,0 +1,26 @@
+<plugin id="bwa_sampe" name="BWA Sampe" version="0.5.9">
+    <description>Convert BWA alignments to SAM format</description>
+    <commands>
+        <command>
+            bwa sampe -a $max_ins -o $max_occ [$mem_index? -P] -n $max_hitpaired -N $max_hitdis [$read_group != ""? -r $read_group] $ref_genome $input_sai1 $input_sai2 $input_read1 $input_read2 -f $output_sam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="ref_genome" type="file" format="bwt_index" label="Index of reference genome" />
+        <param name="input_read1" type="file" format="fastq" label="Input read file1" />
+        <param name="input_read2" type="file" format="fastq" label="Input read file2" />
+        <param name="input_sai1" type="file" format="fastq" label="Input BWA alignments" />
+        <param name="input_sai2" type="file" format="fastq" label="Input BWA alginments" />
+        <param name="read_group" type="text" label="Read group information" />
+        <param name="max_ins" type="int" value="500" label="Maximum insert size for a read pair to be considered being mapped properly"/>
+        <param name="max_occ" type="int" value="100000" label="Maximum occurrences of a read for pairing"/>
+        <param name="mem_index" type="boolean" value="false" label="Load the entire FM-index into memory to reduce disk operations"/>
+        <param name="max_hitpaired" type="int" value="3" label="Maximum number of alignments to output in the XA tag for reads paired properly"/>
+        <param name="max_hitdis" type="int" value="10" label="Maximum number of alignments to output in the XA tag for disconcordant read pairs"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_sam" type="file" format="sam" label="Output SAM" />
+    </outputs>
+</plugin>

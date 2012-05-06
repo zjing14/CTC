@@ -1,0 +1,30 @@
+<suites>
+	<suite label="NGS Mapping Tools" id="mappers">
+		<plugin id="bwa_aln" file="plugins/bwa/bwa_aln.xml"/>
+		<plugin id="bwa_sampe" file="plugins/bwa/bwa_sampe.xml"/>
+		<workflow id="bwa_pe_sam" file="workflows/bwa_pe_sam.xml"/>
+	</suite>
+	<suite label="Realignment Tools" id="realigner">
+		<plugin id="realigner_target_creator" file="plugins/gatk/realigner_target_creator.xml"/>
+		<plugin id="fastr" file="plugins/fastr/FastR.xml"/>
+		<plugin id="gatk_realign" file="plugins/gatk/gatk_realign.xml"/>
+	</suite>
+	<suite label="Disovery Tools" id="discover">
+		<plugin id="dindel" file="plugins/dindel/dindel.xml"/>
+		<plugin id="gatk_genotyper" file="plugins/gatk/gatk_genotyper.xml"/>
+	</suite>
+	<suite label="Variant Calling" id="calling">
+		<workflow id="dindel_variant_calling" file="workflows/dindel_variant_calling.xml"/>
+		<workflow id="gatk_variant_calling" file="workflows/gatk_variant_calling.xml"/>
+		<workflow id="samtools_variant_calling" file="workflows/samtools_variant_calling.xml"/>
+	</suite>
+	<suite label="Other Tools" id="other">
+		<plugin id="sam_to_bam" file="plugins/samtools/sam_to_bam.xml"/>
+		<plugin id="index_bam" file="plugins/samtools/index_bam.xml"/>
+		<plugin id="sort_bam" file="plugins/samtools/sort_bam.xml"/>
+		<plugin id="sam_sorted_bam" file="plugins/samtools/sam_sorted_bam.xml"/>
+		<plugin id="mpileup" file="plugins/samtools/mpileup.xml"/>
+		<plugin id="picard_dedupe" file="plugins/picard/picard_dedupe.xml"/>
+	</suite>
+</suites>
+

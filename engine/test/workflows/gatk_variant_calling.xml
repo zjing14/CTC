@@ -1,0 +1,91 @@
+<workflow id="gatk_variant_calling" name="GATK Variant Calling" version="1.0.1">
+    <description>Call variants from reads with DIndel</description>
+    <inputs>
+        <param name="input-read1" type="file" format="fastq" />
+        <param name="input-read2" type="file" format="fastq" />
+        <param name="ref_genome" type="file" format="bwtindex" />
+        <param name="ref_genome_fasta" type="file" format="bwtindex" />
+    </inputs>
+    <steps>
+        <step id="align1" type="plugin" plugin_id="bwa_aln" >
+            <inputs>
+                <param name="input_read" value="$input-read1" />
+                <param name="ref_genome" value="$ref_genome" />
+                <param name="num_threads" value="4" />
+            </inputs>
+            <outputs>
+                <param name="output" />
+            </outputs>
+        </step>
+        <step id="align2" type="plugin" plugin_id="bwa_aln" >
+            <inputs>
+                <param name="input_read" value="$input-read2" />
+                <param name="ref_genome" value="$ref_genome" />
+                <param name="num_threads" value="4" />
+            </inputs>
+            <outputs>
+                <param name="output" />
+            </outputs>
+        </step>
+        <step id="align3" type="plugin" plugin_id="bwa_sampe" >
+            <inputs>
+                <param name="input_read1" value="$input-read1" />
+                <param name="input_read2" value="$input-read2" />
+                <param name="ref_genome" value="$ref_genome" />
+                <param name="input_sai1" value="$align1.output" />
+                <param name="input_sai2" value="$align2.output" />
+                <param name="read_group" value="'@RG\tID:foo\tSM:bar'" />
+            </inputs>
+            <outputs>
+                <param name="output" />
+            </outputs>
+        </step>
+        <step id="sort" type="plugin" plugin_id="sam_sorted_bam" >
+            <inputs>
+                <param name="input_sam" value="$align3.output" />
+            </inputs>
+            <outputs>
+                <param name="output_bam" />
+            </outpus>
+        </step>
+        <step id="index" type="plugin" plugin_id="index_bam" >
+            <inputs>
+                <param name="input_bam" value="$sort.output_bam" />
+            </inputs>
+            <outputs>
+                <param name="output_bai" />
+            </outpus>
+        </step>
+        <step id="create_target" type="plugin" plugin_id="realigner_target_creator" >
+            <inputs>
+                <param name="input_bam" value="$sort.output_bam" />
+                <param name="ref_genome" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_intervals" />
+            </outpus>
+        </step>
+        <step id="realign" type="plugin" plugin_id="gatk_realign" >
+            <inputs>
+                <param name="input_bam" value="$sort.output_bam" />
+                <param name="input_interval" value="$create_target.output_intervals" />
+                <param name="ref_genome" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_bam" />
+            </outpus>
+        </step>
+        <step id="call_variants" type="plugin" plugin_id="gatk_genotyper" >
+            <inputs>
+                <param name="input_bam" value="$realign.output_bam" />
+                <param name="ref_genome" value="$ref_genome_fasta" />
+            </inputs>
+            <outputs>
+                <param name="output_vcf" />
+            </outpus>
+        </step>
+    </steps>
+    <outputs>
+        <param name="output_vcf" type="file" format="vcf" value="$call_variants.output_vcf" />
+    </outputs>
+</workflow>

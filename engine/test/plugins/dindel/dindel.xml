@@ -1,0 +1,17 @@
+<tool id="dindel" name="Dindel" version="1.0.1">
+    <description>Accurate indel calls from short-read data</description>
+    <commands>
+        <command>
+            python $PLUGIN_DIR/dindel.py -b $input_bam -r $ref_genome -o $output_vcf --doDiploid
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_genome" type="file" format="fasta" label="Reference genome"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_vcf" type="file" format="vcf" label="Output variants (VCF)" />
+    </outputs>
+</tool>

@@ -1,0 +1,16 @@
+<plugin id="sort_bam" name="Index BAM with samtools" version="0.1.18">
+    <description>Sort bam file</description>
+    <commands>
+        <command>
+            samtools sort $input_bam $output_bam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="Input BAM file"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="Output BAM file" />
+    </outputs>
+</plugin>

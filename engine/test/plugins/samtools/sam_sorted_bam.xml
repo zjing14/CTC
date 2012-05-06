@@ -1,0 +1,19 @@
+<plugin id="sam_sorted_bam" name="SAM to Sorted BAM" version="0.1.18">
+    <description>Convert a SAM file to a sorted BAM file</description>
+    <commands>
+        <command>
+            samtools view -bSu $input_sam  | samtools sort - $output_bam
+        </command>
+        <command>
+            mv ${output_bam}.bam $output_bam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_sam" type="file" format="sam" label="SAM file"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="BAM file" />
+    </outputs>
+</plugin>

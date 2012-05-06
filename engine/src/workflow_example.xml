@@ -1,0 +1,51 @@
+<workflow id="bwa_pe_sam" name="Align > pair-end reads with BWA and generate SAM output" version="1.0.1">
+	<description> Align reads with BWA and convert them to BAM format </description>
+	<defines>
+		<param name="GENOME" value="chr22.bam"/>
+		<param name="REFERENCE" value="hg19.fa"/>
+	</defines>
+	<inputs>
+		<param name="input-read1" type="file" format="fastq"/>
+		<param name="input-read2" type="file" format="fastq"/>
+		<param name="ref_genome" type="file" format="bwtindex"/>
+	</inputs>
+	<outputs>
+		<param name="output_sam" type="file" format="bam" value="$3.output"/>
+	</outputs>
+	<steps>
+		<step id="1" type="unknown" plugin_id="bwa_aln">
+			<inputs>
+				<param name="input_read" value="$0.input-read1"/>
+				<param name="num_threads" value="4"/>
+				<param name="ref_genome" value="$0.ref_genome"/>
+			</inputs>
+			<outputs>
+				<param name="output" value=""/>
+			</outputs>
+		</step>
+		<step id="2" type="unknown" plugin_id="bwa_aln">
+			<inputs>
+				<param name="input_read" value="$0.input-read2"/>
+				<param name="num_threads" value="4"/>
+				<param name="ref_genome" value="$0.ref_genome"/>
+			</inputs>
+			<outputs>
+				<param name="output" value=""/>
+			</outputs>
+		</step>
+		<step id="3" type="unknown" plugin_id="bwa_sampe">
+			<inputs>
+				<param name="input_read1" value="$0.input-read1"/>
+				<param name="input_read2" value="$0.input-read2"/>
+				<param name="input_sai1" value="$1.output"/>
+				<param name="input_sai2" value="$2.output"/>
+				<param name="read_group" value="'@RG\tID:foo\tSM:bar'"/>
+				<param name="ref_genome" value="$0.ref_genome"/>
+			</inputs>
+			<outputs>
+				<param name="output" value=""/>
+			</outputs>
+		</step>
+	</steps>
+</workflow>
+

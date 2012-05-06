@@ -1,0 +1,25 @@
+# Example of bpipe like annotated script. 
+WORKFLOW_ID=imported_variant_calling
+WORKFLOW_NAME="Call variants with samtools"
+WORKFLOW_VERSION=1.0.0
+SUITE_ID=imported
+
+REFERENCE=reference.fa
+
+align := {
+    bwa aln -I -t 8 $REFERENCE $input > ${input}.sai
+    bwa samse $REFERENCE ${input}.sai $input > $output
+}
+
+sort := {
+    samtools view -bSu $input  | samtools sort - $output
+    mv ${output}.bam ${output}
+}
+
+index := {
+    samtools index $input
+}
+
+call_variants := {
+    samtools mpileup -uf $REFERENCE $input | bcftools view -bvcg - > $output
+}

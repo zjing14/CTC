@@ -1,0 +1,29 @@
+Installation
+------------
+
+1. Build bamtools
+
+Under the fast root.
+
+% cd bamtools
+% mkdir build
+% cd build
+% cmake ..
+% make
+
+2. Include the lib dir of bamtools into the LD_LIBRARY_PATH environment variable
+
+% export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/bamtools/lib
+
+3. Build fastr
+
+Return to the vt_lr root.
+
+% ./configure --with-bamtools=./bamtools
+% make
+
+4. Run the program with threading enabled
+
+% ./IndelRealigner --threads=4 <input.bam> <input.intervals> <ref_genome> <output.bam>
+
+Note: In the intervals file, each line should start with a '>'. Otherwise, the code will enter a dead loop.

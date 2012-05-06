@@ -1,0 +1,17 @@
+<plugin id="mpileup" name="Call variants with samtools" version="0.1.18">
+    <description></description>
+    <commands>
+        <command>
+            samtools mpileup -uf $ref_genome $input_bam | bcftools view -bvcg - > $output_vcf
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_genome" type="file" format="fai" label="Input genome"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_vcf" type="file" format="vcf" label="VCF file" />
+    </outputs>
+</plugin>

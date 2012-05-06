@@ -1,0 +1,32 @@
+CXX=g++
+CFLAGS=-I../include -g -O2
+OBJ = ctc_workflow.o ctc_plugin.o ctc_catalog.o ctc_engine.o ctc_util.o ctc_sysconfig.o ctc_logger.o
+
+%.o: %.cpp
+	$(CXX) -c -o $@ $< $(CFLAGS)
+
+all: test query_engine execute_engine create_workflow create_plugin_template align_workflow_c  import_script 
+
+test: test.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+query_engine: query_engine.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+execute_engine: execute_engine.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+create_workflow: create_workflow.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+create_plugin_template: create_plugin_template.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+align_workflow_c : program_workflow_example.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+import_script: import_script.o $(OBJ)
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+clean:
+	rm *.o test query_engine execute_engine create_workflow align_workflow_c  import_script

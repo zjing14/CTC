@@ -1,0 +1,20 @@
+<plugin id="gatk_realign" name="Realign reads with GATK" version="1.6">
+    <description>Realign reads around indel</description>
+    <commands>
+        <command>
+            java -Xmx1g -jar /ctc-shared/software/gatk-1.6/GenomeAnalysisTK.jar -T IndelRealigner -I $input_bam -R $ref_genome [$indels != ""? --known $indels] -model $model -targetIntervals $input_interval -o $output_bam
+        </command>
+    </commands>
+
+    <inputs>
+        <param name="input_bam" type="file" format="bam" label="BAM file"/>
+        <param name="ref_genome" type="file" format="fasta" label="Reference genome"/>
+        <param name="input_interval" type="file" format="gatk_interval" label="Genomic intervals"/>
+        <param name="model" value="USE_READS" type="text" format="" label="Consensus determination model"/>
+        <param name="indels" type="file" format="vcf" label="Known indels"/>
+    </inputs>
+
+    <outputs>
+        <param name="output_bam" type="file" format="bam" label="Realigned BAM file" />
+    </outputs>
+</plugin>
