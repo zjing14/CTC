@@ -116,7 +116,7 @@ if (len(sys.argv) != 2):
     sys.exit("Usage: python cli.py <engine_root_dir>")
 
 engine_root_dir = sys.argv[1]
-readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'createPluginTemplate', 'createWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
+readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'createPluginTemplate', 'listWorkflows', 'createWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
 readline.parse_and_bind('tab: complete')
 readline.parse_and_bind('set editing-mode vi')
 print ("Enter \"exit\" to quit")

@@ -21,7 +21,7 @@ AC_PROG_CC
             [AC_MSG_WARN([NVCC compiler version is NOT 3.0!])
             ])
 
-CUDA_ARCH=" -arch=sm_20"
+CUDA_ARCH=" -arch=sm_20 -O3"
 
 # Set CUDA_CFLAGS to $NVCC, where substring "bin/nvcc"
 # is substituted by "include".

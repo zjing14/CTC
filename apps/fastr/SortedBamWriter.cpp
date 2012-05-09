@@ -23,6 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <sys/time.h>
+
+extern double sort_t;
+
+static struct timeval start_t, end_t;
+#define TIMER_START gettimeofday(&start_t, NULL)
+#define TIMER_END gettimeofday(&end_t, NULL)
+#define MICRO_SECONDS ((end_t.tv_sec - start_t.tv_sec)*1e6 + (end_t.tv_usec - start_t.tv_usec))
 
 struct BamSortLessThanPositionPtr {
     bool operator()(const BamAlignment *lhs, const BamAlignment *rhs) {
@@ -62,7 +70,11 @@ void SortedBamWriter::dump()
     reads.insert(reads.end(), unsorted_reads.begin(), unsorted_reads.end());
     unsorted_reads.clear();
 
+    TIMER_START;
     sort(reads.begin(), reads.end(), BamSortLessThanPositionPtr());
+    TIMER_END;
+    sort_t += MICRO_SECONDS;
+
     for(vector<BamAlignment *>::iterator itr = reads.begin(); itr != reads.end(); itr++) {
         writer->SaveAlignment(**itr);
         delete *itr;
@@ -118,7 +130,10 @@ vector<BamAlignment *> SortedBamWriter::merge(vector<BamAlignment *>& list1, vec
 
 void SortedBamWriter::flush()
 {
+    TIMER_START;
     sort(unsorted_reads.begin(), unsorted_reads.end(), BamSortLessThanPositionPtr());
+    TIMER_END;
+    sort_t += MICRO_SECONDS;
 
     int size = reads.size();
     reads = merge(reads, unsorted_reads);

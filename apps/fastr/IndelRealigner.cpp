@@ -72,20 +72,28 @@
 using namespace std;
 using namespace BamTools;
 
-double prep_t;
-double align_t;
+double prep_t = 0;
+double align_t = 0;
+double output_t = 0;
+double sort_t = 0;
+double read_t = 0;
 
 int equalConsensusCount = 0;
 int loci = 0;
 
-struct timeval start_t, end_t;
+static struct timeval start_t, end_t;
 #define TIMER_START gettimeofday(&start_t, NULL)
 #define TIMER_END gettimeofday(&end_t, NULL)
 #define MICRO_SECONDS ((end_t.tv_sec - start_t.tv_sec)*1e6 + (end_t.tv_usec - start_t.tv_usec))
 
+static struct timeval start_t1, end_t1;
+#define TIMER_START1 gettimeofday(&start_t1, NULL)
+#define TIMER_END1 gettimeofday(&end_t1, NULL)
+#define MICRO_SECONDS1 ((end_t1.tv_sec - start_t1.tv_sec)*1e6 + (end_t1.tv_usec - start_t1.tv_usec))
+
 #define MAX_BATCHED_READ        5000
-#define REGIONS_PER_THREAD       16
-#define MAX_ReadLengh 100
+#define REGIONS_PER_THREAD      32 
+// #define MAX_ReadLengh 100
 static char ch_lookup[128];
 int score_offset;
 long int actual_cleaned;
@@ -1261,11 +1269,14 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                TIMER_START1;
                 if(readers[i]->GetNextAlignment(b)) {
                     nextAlignments[i] = new BamAlignment(b);
                 } else {
                     nextAlignments[i] = NULL;
                 }
+                TIMER_END1;
+                read_t += MICRO_SECONDS1;
             }
 
             region->altConsensus = cleanAltConsensus.back();
@@ -1329,10 +1340,13 @@ int main(int argc, char *argv[])
             TIMER_END;
             align_t += MICRO_SECONDS;
 
+            TIMER_START;
             for(unsigned int i = 0; i < regionData.size(); i++) {
                 regionData[i]->writer->addReads(regionData[i]->writeList);
                 regionData[i]->writeList.clear();
             }
+            TIMER_END;
+            output_t += MICRO_SECONDS;
 
             //Clear all lists.
             for(unsigned int i = 0; i < regionData.size(); i++) {
@@ -1371,8 +1385,7 @@ int main(int argc, char *argv[])
         regionReads.clear();
     }
 
-    cout << "Preperation Time\t" << prep_t * 1e-6 << endl;
-    cout << "Alignment Time\t" << align_t * 1e-6 << endl;
+    TIMER_START;
     //Output the rest of the reads
     for(unsigned int i = 0; i < bam_files.size(); i++) {
         while(nextAlignments[i] != NULL) {
@@ -1386,6 +1399,15 @@ int main(int argc, char *argv[])
             }
         }
     }
+    TIMER_END;
+    output_t += MICRO_SECONDS;
+
+    cout << "Preperation Time\t" << prep_t * 1e-6 << endl;
+    cout << "Alignment Time\t" << align_t * 1e-6 << endl;
+    cout << "Read Time\t" << read_t * 1e-6 << endl;
+    cout << "Output Time\t" << output_t * 1e-6 << endl;
+    cout << "Sort Time\t" << sort_t * 1e-6 << endl;
+
     delete[] nextAlignments;
 
     //Clean up all Writers

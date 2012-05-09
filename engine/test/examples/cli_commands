@@ -1,3 +1,3 @@
-executePlugin bwa_aln --ref_genome /ctc-shared/genomes/hg19.fa --input_read /ctc-shared/reads/SRR062634_1.filt.1M.fastq --output /tmp/SRR062634_1.filt.1M.sai --num_threads 4
+executePlugin bwa_aln --ref_genome /ctc-shared/genomes/hg19.fa --input_read /ctc-shared/reads/SRR062634_1.filt.1M.fastq --output_sai /tmp/SRR062634_1.filt.1M.sai --num_threads 4
 executeWorkflow bwa_pe_sam --input-read1 /ctc-shared/reads/SRR062634_1.filt.1M.fastq --input-read2 /ctc-shared/reads/SRR062634_2.filt.1M.fastq --ref_genome /ctc-shared/genomes/hg19.fa --output_sam bwa.sam
 executeWorkflow dindel_variant_calling --input-read1 /ctc-shared/reads/SRR062634_1.filt.1M.fastq --input-read2 /ctc-shared/reads/SRR062634_2.filt.1M.fastq --ref_genome /ctc-shared/genomes/hg19.fa --ref_genome_fasta /ctc-shared/genomes/hg19.fa --output_vcf dindel.vcf
