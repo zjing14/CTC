@@ -42,7 +42,7 @@ cudaError_t cudaRes;
 }
 
 
-__device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte *quals, byte *refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup, int quitAboveThisValue)
+__device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte *quals, byte *refSeq, int refLen, int refIndex, int getReadLength, char *ch_lookup, int quitAboveThisValue)
 {
     int sum = 0;
     for(int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++) {
@@ -69,7 +69,7 @@ __device__ int mismatchQualitySumIgnoreCigar2_CUDA(byte *readSeq, byte *quals, b
 }
 
 
-__device__ int mismatchQualitySumIgnoreCigar_CUDA(byte *readSeq, byte *quals, byte *refSeq, long refLen, long refIndex, int getReadLength, char *ch_lookup)
+__device__ int mismatchQualitySumIgnoreCigar_CUDA(byte *readSeq, byte *quals, byte *refSeq, int refLen, int refIndex, int getReadLength, char *ch_lookup)
 {
     int sum = 0;
     for(int readIndex = 0 ; readIndex < getReadLength; refIndex++, readIndex++) {
@@ -95,8 +95,8 @@ __global__ void findBestOffset_CUDA(byte *ref_g,  byte *readSeq_g,  byte *quals_
     int b = blockIdx.x;
     int i = threadIdx.x;
     int ii = threadIdx.x + blockDim.x;
-    __shared__ long score[1024];
-    __shared__ long scoreindex[1024];
+    __shared__ int score[1024];
+    __shared__ int scoreindex[1024];
     int ref_offset = 0;
     int quals_offset = 0;
     int ReadLength_offset = 0;
@@ -109,8 +109,8 @@ __global__ void findBestOffset_CUDA(byte *ref_g,  byte *readSeq_g,  byte *quals_
         for(int k = 0; k < n_consensus[t]; k++) {
             if(b < altReads[t]) {
 
-                score[i] = LONG_MAX;
-                score[ii] = LONG_MAX;
+                score[i] = INT_MAX;
+                score[ii] = INT_MAX;
                 scoreindex[i] = i;
                 scoreindex[ii] = ii;
 
@@ -165,9 +165,9 @@ __global__ void findBestOffset_CUDA(byte *ref_g,  byte *readSeq_g,  byte *quals_
 
                 __syncthreads();
 
-                score[i] = LONG_MAX;
+                score[i] = INT_MAX;
                 scoreindex[i] = i ;
-                score[ii] = LONG_MAX;
+                score[ii] = INT_MAX;
                 scoreindex[ii] = ii ;
                 int maxPossibleStart = refLens[n_refLen] - ReadLength[b];
                 maxPossibleStart = maxPossibleStart - (originalAlignment[b] + 1);
