@@ -67,8 +67,7 @@
 #include <set>
 #include <getopt.h>
 #include <sys/time.h>
-#include "cuda/swat_cuda.h"
-#include "cuda/FastOffset.h"
+#include "oclHelper.h"
 using namespace std;
 using namespace BamTools;
 
@@ -93,8 +92,24 @@ static struct timeval start_t1, end_t1;
 
 #define MAX_BATCHED_READ        5000
 #define REGIONS_PER_THREAD      32 
-// #define MAX_ReadLengh 100
+#define MAX_ReadLengh 100
 static char ch_lookup[128];
+cl_program clProgram;
+cl_kernel clKernel_kernel1;
+cl_int errcode;
+cl_mem d_ch_lookup;
+cl_context clContext;
+cl_command_queue clCommands;
+cl_mem d_readSeq;
+cl_mem d_quals;
+cl_mem d_ref;
+cl_mem d_ScoreIndex;
+cl_mem d_BestScore;
+cl_mem d_ReadLengh;
+cl_mem d_originalAlignment;
+cl_mem d_n_consensus;
+cl_mem d_altReads;
+cl_mem d_refLens;
 int score_offset;
 long int actual_cleaned;
 int use_gpu_flag = 1;
@@ -116,7 +131,7 @@ public:
 
     Region(string &region) {
         startPos = -1;
-        stopPos = -1;
+	stopPos = -1;
         size_t foundFirstColon = region.find(":");
         // we only have a single string, use the whole sequence as the target
         if(foundFirstColon == string::npos) {
@@ -159,6 +174,7 @@ const double MISMATCH_THRESHOLD = 0.15;
 const double MISMATCH_COLUMN_CLEANED_FRACTION = 0.75;
 
 
+OclEnv *ocl_env;
 // create a Consensus from cigar/read strings which originate somewhere on the reference
 Consensus *createAlternateConsensus(const int indexOnRef, const Cigar c, const byte reference[], const int refLen, const byte readStr[], const int readLen)
 {
@@ -480,84 +496,7 @@ void generateAlternateConsensesFromReads(vector< vector<AlignedRead *> >& altAli
     }
 }
 
-//Generates alternate consenses from the reads given on the GPU.
-void generateAlternateConsensesFromReads_CUDA(vector< vector<AlignedRead *> >& altAlignmentsToTest,
-        vector< ConsensusHashTable * >& altConsensesToPopulate,
-        vector< ReadBin * >& readBins,
-        long randomSeed)
-{
 
-    int t_readLen = 0, n_read = 0;
-    int t_refLen = 0, n_ref = 0;
-    for(int i = 0; i < altAlignmentsToTest.size(); i++) {
-        n_ref++;
-        t_refLen += readBins[i]->getReferenceLen();
-        for(vector<AlignedRead *>::iterator itr = altAlignmentsToTest[i].begin(); itr != altAlignmentsToTest[i].end(); itr++) {
-            AlignedRead *aRead = *itr;
-            //createAndAddAlternateConsensus(aRead->getReadBases(), aRead->getReadLength(), *altConsensesToPopulate[i], readBins[i]->getReference(), readBins[i]->getReferenceLen());
-            n_read++;
-            t_readLen += aRead->getReadLength();
-        }
-    }
-
-    byte *reads = new byte[t_readLen];
-    byte *refs = new byte[t_refLen];
-    int *read_off = new int[n_read + 1];
-    int *ref_off = new int[n_read + 1];
-    int *readLens = new int[n_read];
-    int *refLens = new int[n_read];
-    int counter = 0;
-    read_off[counter] = 0;
-    ref_off[counter] = 0;
-    counter++;
-    int read_pos = 0;
-    int ref_pos = 0;
-    int max_len = 0;
-    for(int i = 0; i < altAlignmentsToTest.size(); i++) {
-        memcpy(refs + ref_pos, readBins[i]->getReference(), readBins[i]->getReferenceLen());
-        for(vector<AlignedRead *>::iterator itr = altAlignmentsToTest[i].begin(); itr != altAlignmentsToTest[i].end(); itr++) {
-            AlignedRead *aRead = *itr;
-            memcpy(reads + read_pos, aRead->getReadBases(), aRead->getReadLength());
-            read_pos += aRead->getReadLength();
-            read_off[counter] = read_pos;
-            ref_off[counter] = ref_pos;
-            readLens[counter - 1] = aRead->getReadLength();
-            refLens[counter - 1] = readBins[i]->getReferenceLen();
-            if(refLens[counter - 1] > max_len) {
-                max_len = refLens[counter - 1];
-            }
-            counter++;
-        }
-        ref_pos += readBins[i]->getReferenceLen();
-        ref_off[counter - 1] = ref_pos;
-    }
-
-    vector< vector<CigarOp> > Cigars;
-    int *alignment_offset = new int[n_read];
-    swat(refs, t_refLen, ref_off, refLens, n_ref, reads, t_readLen,  read_off, readLens, n_read, SW_GAP, SW_GAP_EXTEND, SW_MATCH, SW_MISMATCH, Cigars, alignment_offset, max_len);
-    int k = 0;
-    for(int i = 0; i < altAlignmentsToTest.size(); i++) {
-        for(vector<AlignedRead *>::iterator itr = altAlignmentsToTest[i].begin(); itr != altAlignmentsToTest[i].end(); itr++) {
-            AlignedRead *aRead = *itr;
-            Consensus *c = createAlternateConsensus(alignment_offset[k], Cigars[k], readBins[i]->getReference(), readBins[i]->getReferenceLen(), aRead->getReadBases(), aRead->getReadLength());
-            if(c != NULL) {
-                if(!(*altConsensesToPopulate[i]).put(c)) {
-                    delete c;
-                }
-            }
-            k++;
-        }
-    }
-
-
-    delete alignment_offset;
-    delete reads;
-    delete refs;
-    delete read_off;
-    delete ref_off;
-    delete readLens;
-    delete refLens;
-}
 
 
 pair<int, int> findBestOffset(const byte ref[], const int refLen, AlignedRead &read, const int leftmostIndex)
@@ -727,6 +666,168 @@ bool doNotTryToClean(const BamAlignment &read)
                );
     return old;
 }
+
+
+int clean_gpu_prep(vector<BamRegionData *> &reads, int iter_num, int **ScoreIndex, int **BestScore, size_t &globalWorkSize, size_t &localWorkSize)
+    {
+
+        int t_altReads = 0;
+        int t_refLen = 0;
+        int t_score = 0;
+        int n_refLen = 0;
+        for(int i = 0; i < iter_num; i++) {
+            vector<Consensus *> finalConsensus;
+            vector<Consensus *>::iterator itr;
+            BamRegionData *rd = reads[i];
+            ConsensusHashTable *altConsensus = rd->altConsensus;
+            altConsensus->toArray(finalConsensus);
+            vector<AlignedRead *>& altReads = rd->altReads;
+            t_altReads += altReads.size();
+            for(itr = finalConsensus.begin(); itr != finalConsensus.end(); itr++) {
+                Consensus *consensus = *itr;
+                t_refLen += consensus->strLen;
+                t_score += altReads.size();
+                n_refLen += 1;
+            }
+        }
+        score_offset = t_score;
+        if(t_altReads == 0 || t_refLen == 0 || t_score == 0) {
+            return 0;
+        }
+
+
+        *ScoreIndex = (int *)malloc(sizeof(int) * t_score);
+        *BestScore = (int *)malloc(sizeof(int) * t_score);
+        byte *h_readSeq = (byte *)malloc(sizeof(byte) * MAX_ReadLengh * t_altReads);
+        byte *h_quals = (byte *)malloc(sizeof(byte) * MAX_ReadLengh * t_altReads);
+        byte *h_ref = (byte *)malloc(sizeof(byte) * t_refLen);
+        int *ReadLengh = (int *)malloc(sizeof(int) * t_altReads);
+        int *originalAlignment = (int *)malloc(sizeof(int) * t_altReads);
+        int *h_n_consensus = (int *)malloc(sizeof(int) * iter_num);
+        int *h_altReads = (int *)malloc(sizeof(int) * iter_num);
+        int *h_refLens = (int *)malloc(sizeof(int) * n_refLen);
+
+        localWorkSize = 256;
+        globalWorkSize = 1;
+        int reads_off = 0, ref_off = 0, Consensus_off = 0;
+
+        for(int i = 0; i < iter_num; i++) {
+            vector<Consensus *> finalConsensus;
+            vector<Consensus *>::iterator itr;
+            BamRegionData *rd = reads[i];
+            ReadBin *readsToClean = rd->rb;
+            vector<BamAlignment *>& refReads = rd->refReads;
+            vector<AlignedRead *>& altReads = rd->altReads;
+            vector<AlignedRead *>& altAlignmentsToTest = rd->altAlignmentsToTest;
+            ConsensusHashTable *altConsensus = rd->altConsensus;
+            altConsensus->toArray(finalConsensus);
+            int leftmostIndex = readsToClean->getStart();
+            h_altReads[i] = altReads.size();
+            if(altReads.size() > globalWorkSize) {
+                globalWorkSize = altReads.size();
+            }
+
+            for(unsigned int j = 0; j < altReads.size(); j++) {
+                AlignedRead *toTest = altReads[j];
+                byte *readSeq = (*toTest).getReadBases();
+                byte *quals = (*toTest).getBaseQualities();
+                ReadLengh[reads_off] = (*toTest).getReadLength();
+                originalAlignment[reads_off] = (*toTest).getOriginalAlignmentStart() - leftmostIndex;
+                memcpy(h_readSeq + reads_off * MAX_ReadLengh, readSeq, sizeof(byte) * ReadLengh[reads_off]);
+                memcpy(h_quals + reads_off * MAX_ReadLengh, quals, sizeof(byte) * ReadLengh[reads_off]);
+                if(originalAlignment[reads_off] > 512) {
+                    localWorkSize = 512;
+                }
+                reads_off += 1;
+            }
+
+            h_n_consensus[i] = finalConsensus.size();
+            for(itr = finalConsensus.begin(); itr != finalConsensus.end(); itr++) {
+                Consensus *consensus = *itr;
+                memcpy(h_ref + ref_off, consensus->str, sizeof(byte) * consensus->strLen);
+                ref_off += consensus->strLen;
+                h_refLens[Consensus_off] = consensus->strLen;
+                Consensus_off += 1;
+            }
+        }
+
+        globalWorkSize = localWorkSize * globalWorkSize;
+
+        d_readSeq = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(byte) * MAX_ReadLengh * t_altReads, NULL, &errcode);
+        CHECKERR(errcode);
+        d_quals = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(byte) * MAX_ReadLengh * t_altReads, NULL, &errcode);
+        CHECKERR(errcode);
+        d_ReadLengh = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(int) * t_altReads, NULL, &errcode);
+        CHECKERR(errcode);
+        d_originalAlignment = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(int) * t_altReads, NULL, &errcode);
+        CHECKERR(errcode);
+        d_ScoreIndex = clCreateBuffer(clContext, CL_MEM_READ_ONLY, sizeof(int) * t_score, NULL, &errcode);
+        CHECKERR(errcode);
+        d_BestScore = clCreateBuffer(clContext, CL_MEM_READ_ONLY, sizeof(int) * t_score, NULL, &errcode);
+        CHECKERR(errcode);
+        d_ref = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(byte) * t_refLen, NULL, &errcode);
+        CHECKERR(errcode);
+        d_n_consensus = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(int) * iter_num, NULL, &errcode);
+        CHECKERR(errcode);
+        d_altReads = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(int) * iter_num, NULL, &errcode);
+        CHECKERR(errcode);
+        d_refLens = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(int) * n_refLen, NULL, &errcode);
+        CHECKERR(errcode);
+
+        errcode = clEnqueueWriteBuffer(clCommands, d_readSeq, CL_TRUE, 0, sizeof(byte) * MAX_ReadLengh * t_altReads, (void *) h_readSeq, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_quals, CL_TRUE, 0, sizeof(byte) * MAX_ReadLengh * t_altReads, (void *) h_quals, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_ReadLengh, CL_TRUE, 0, sizeof(int) * t_altReads, (void *) ReadLengh, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_originalAlignment, CL_TRUE, 0, sizeof(int) * t_altReads, (void *) originalAlignment, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_ref, CL_TRUE, 0, sizeof(byte) * t_refLen, (void *) h_ref, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_n_consensus, CL_TRUE, 0, sizeof(int) * iter_num, (void *) h_n_consensus, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_altReads, CL_TRUE, 0, sizeof(int) * iter_num, (void *) h_altReads, 0, NULL, NULL);
+        CHECKERR(errcode);
+        errcode = clEnqueueWriteBuffer(clCommands, d_refLens, CL_TRUE, 0, sizeof(int) * n_refLen, (void *) h_refLens, 0, NULL, NULL);
+        CHECKERR(errcode);
+
+        free(h_n_consensus);
+        free(h_altReads);
+        free(h_refLens);
+        free(h_ref);
+        free(h_readSeq);
+        free(h_quals);
+        free(ReadLengh);
+        free(originalAlignment);
+        return 1;
+    }
+
+void clean_gpu(int iter_num, const size_t globalWorkSize,  const size_t localWorkSize)
+    {
+        errcode  = clSetKernelArg(clKernel_kernel1, 0, sizeof(cl_mem), (void *) &d_ref);
+        errcode |= clSetKernelArg(clKernel_kernel1, 1, sizeof(cl_mem), (void *) &d_readSeq);
+        errcode |= clSetKernelArg(clKernel_kernel1, 2, sizeof(cl_mem), (void *) &d_quals);
+        errcode |= clSetKernelArg(clKernel_kernel1, 3, sizeof(cl_mem), (void *) &d_ReadLengh);
+        errcode |= clSetKernelArg(clKernel_kernel1, 4, sizeof(cl_mem), (void *) &d_originalAlignment);
+        errcode |= clSetKernelArg(clKernel_kernel1, 5, sizeof(cl_mem), (void *) &d_BestScore);
+        errcode |= clSetKernelArg(clKernel_kernel1, 6, sizeof(cl_mem), (void *) &d_ScoreIndex);
+        errcode |= clSetKernelArg(clKernel_kernel1, 7, sizeof(cl_mem), (void *) &d_ch_lookup);
+        errcode |= clSetKernelArg(clKernel_kernel1, 8, sizeof(int), (void *) &iter_num);
+        errcode |= clSetKernelArg(clKernel_kernel1, 9, sizeof(cl_mem), (void *) &d_n_consensus);
+        errcode |= clSetKernelArg(clKernel_kernel1, 10, sizeof(cl_mem), (void *) &d_altReads);
+        errcode |= clSetKernelArg(clKernel_kernel1, 11, sizeof(cl_mem), (void *) &d_refLens);
+        CHECKERR(errcode);
+	//TIMER_START;
+        errcode = clEnqueueNDRangeKernel(clCommands, clKernel_kernel1, 1, NULL, &globalWorkSize, &localWorkSize, 0, NULL, NULL);
+        CHECKERR(errcode);
+	
+        errcode = clFinish(clCommands);
+        CHECKERR(errcode);
+	//TIMER_END;
+	//cout << it <<  " OpenCL:" << MICRO_SECONDS << " " << globalWorkSize/localWorkSize << " " << localWorkSize << endl;
+	//it++;
+    }
+
 
 int preclean(ReadBin *readsToClean, vector<BamAlignment *>& allReads,
              vector<BamAlignment *>& refReads,
@@ -1018,12 +1119,6 @@ void usage()
 }
 
 
-void freeResource()
-{
-    if(use_gpu_flag) {
-        free_lookup();
-    }
-}
 
 int main(int argc, char *argv[])
 {
@@ -1120,10 +1215,22 @@ int main(int argc, char *argv[])
     if(argc - optind < 4) {
         usage(), abort();
     }
-
+    
     if(use_gpu_flag) {
-        cpy2d_lookup(ch_lookup);
+            ocl_env = new OclEnv(1);
+            clContext = ocl_env->context;
+            clCommands = ocl_env->commands;
+            path2 += "/IndelRealigner_kernel.cl";
+            clProgram = oclBuildProgram(path2.c_str(), clContext, ocl_env->device_id);
+            clKernel_kernel1 = clCreateKernel(clProgram, "findBestOffset1", &errcode);
+            CHECKERR(errcode);
+            d_ch_lookup = clCreateBuffer(clContext, CL_MEM_WRITE_ONLY, sizeof(char) * 128, NULL, &errcode);
+            CHECKERR(errcode);
+            errcode = clEnqueueWriteBuffer(clCommands, d_ch_lookup, CL_TRUE, 0, sizeof(char) * 128, (void *) ch_lookup, 0, NULL, NULL);
+            CHECKERR(errcode);
+
     }
+
     //Get Input Bam Files
     if(population_genetics_flag) {
         ifstream input;
@@ -1302,11 +1409,11 @@ int main(int argc, char *argv[])
         if((regionData.size() >= max_regions && totalReads >= max_batched_reads) || !regionsLeft) {
 
             if(use_sw_flag) {
-                if(use_gpu_flag) {
-                    generateAlternateConsensesFromReads_CUDA(cleanAltAlignments, cleanAltConsensus, readBins, 0);
-                } else {
-                    generateAlternateConsensesFromReads(cleanAltAlignments, cleanAltConsensus, readBins, 0);
-                }
+                //if(use_gpu_flag) {
+                    //generateAlternateConsensesFromReads_CUDA(cleanAltAlignments, cleanAltConsensus, readBins, 0);
+                //} else {
+                generateAlternateConsensesFromReads(cleanAltAlignments, cleanAltConsensus, readBins, 0);
+               // }
             }
 
             //Clean the reads that we have
@@ -1317,87 +1424,99 @@ int main(int argc, char *argv[])
             int use_gpu = 0;
 
             if(use_gpu_flag) {
-                use_gpu = clean_cuda_prep(regionData, iter_num, &BestScore, &ScoreIndex, globalWorkSize, localWorkSize);
+                use_gpu = clean_gpu_prep(regionData, iter_num, &BestScore, &ScoreIndex, globalWorkSize, localWorkSize);
             }
 
             if(use_gpu) {
-                clean_cuda(iter_num, globalWorkSize, localWorkSize, BestScore, ScoreIndex);
-                score_offset = 0;
-                for(int t = 0; t < iter_num; t++) {
-                    BamRegionData *rd = regionData[t];
-                    clean_cpu(rd->rb, rd->refReads, rd->altReads, rd->altAlignmentsToTest, rd->altConsensus, rd->totalRawMismatchSum, BestScore, ScoreIndex);
+                clean_gpu(iter_num, globalWorkSize, localWorkSize);
+		errcode = clEnqueueReadBuffer(clCommands, d_BestScore, CL_TRUE, 0, sizeof(int) * score_offset, (void *) BestScore, 0, NULL, NULL);
+		CHECKERR(errcode);
+		errcode = clEnqueueReadBuffer(clCommands, d_ScoreIndex, CL_TRUE, 0, sizeof(int) * score_offset, (void *) ScoreIndex, 0, NULL, NULL);
+		CHECKERR(errcode);
+		score_offset = 0;
+		for(int t = 0; t < iter_num; t++) {
+			BamRegionData *rd = regionData[t];
+			clean_cpu(rd->rb, rd->refReads, rd->altReads, rd->altAlignmentsToTest, rd->altConsensus, rd->totalRawMismatchSum, BestScore, ScoreIndex);
                 }
+		clReleaseMemObject(d_n_consensus);
+		clReleaseMemObject(d_altReads);
+		clReleaseMemObject(d_refLens);
+		clReleaseMemObject(d_ScoreIndex);
+		clReleaseMemObject(d_BestScore);
+		clReleaseMemObject(d_ref);
+		clReleaseMemObject(d_readSeq);
+		clReleaseMemObject(d_quals);
+		clReleaseMemObject(d_ReadLengh);
+		clReleaseMemObject(d_originalAlignment);
+		free(ScoreIndex);
+		free(BestScore);
+	    } else {
+		    for(int t = 0; t < iter_num; t++) {
+			    BamRegionData *rd = regionData[t];
+			    clean(rd->rb, rd->refReads, rd->altReads, rd->altAlignmentsToTest, rd->altConsensus, rd->totalRawMismatchSum);
+		    }
+	    }
+	    TIMER_END;
+	    align_t += MICRO_SECONDS;
 
-                free_resource();
-                free(ScoreIndex);
-                free(BestScore);
-            } else {
-                for(int t = 0; t < iter_num; t++) {
-                    BamRegionData *rd = regionData[t];
-                    clean(rd->rb, rd->refReads, rd->altReads, rd->altAlignmentsToTest, rd->altConsensus, rd->totalRawMismatchSum);
-                }
-            }
-            TIMER_END;
-            align_t += MICRO_SECONDS;
+	    TIMER_START;
+	    for(unsigned int i = 0; i < regionData.size(); i++) {
+		    regionData[i]->writer->addReads(regionData[i]->writeList);
+		    regionData[i]->writeList.clear();
+	    }
+	    TIMER_END;
+	    output_t += MICRO_SECONDS;
 
-            TIMER_START;
-            for(unsigned int i = 0; i < regionData.size(); i++) {
-                regionData[i]->writer->addReads(regionData[i]->writeList);
-                regionData[i]->writeList.clear();
-            }
-            TIMER_END;
-            output_t += MICRO_SECONDS;
+	    //Clear all lists.
+	    for(unsigned int i = 0; i < regionData.size(); i++) {
+		    regionData[i]->refReads.clear();
+		    regionData[i]->allReads.clear();
+		    regionData[i]->altReads.clear();
+		    regionData[i]->altAlignmentsToTest.clear();
+		    regionData[i]->totalRawMismatchSum = 0;
+		    delete regionData[i];
+	    }
+	    regionData.clear();
+	    for(unsigned int i = 0; i < readBins.size(); i++) {
+		    delete readBins[i];
+	    }
+	    readBins.clear();
+	    readIdx = -1;
+	    totalReads = 0;
 
-            //Clear all lists.
-            for(unsigned int i = 0; i < regionData.size(); i++) {
-                regionData[i]->refReads.clear();
-                regionData[i]->allReads.clear();
-                regionData[i]->altReads.clear();
-                regionData[i]->altAlignmentsToTest.clear();
-                regionData[i]->totalRawMismatchSum = 0;
-                delete regionData[i];
-            }
-            regionData.clear();
-            for(unsigned int i = 0; i < readBins.size(); i++) {
-                delete readBins[i];
-            }
-            readBins.clear();
-            readIdx = -1;
-            totalReads = 0;
+	    cleanAltAlignments.clear();
+	    for(unsigned int i = 0; i < cleanAltConsensus.size(); i++) {
+		    delete cleanAltConsensus[i];
+	    }
+	    cleanAltConsensus.clear();
+	}
 
-            cleanAltAlignments.clear();
-            for(unsigned int i = 0; i < cleanAltConsensus.size(); i++) {
-                delete cleanAltConsensus[i];
-            }
-            cleanAltConsensus.clear();
-        }
+	if(regionsLeft) {
+		ReadBin *rb = new ReadBin(currentInterval.getContigName(), fr);
+		readBins.push_back(rb);
+		readIdx++;
+	}
 
-        if(regionsLeft) {
-            ReadBin *rb = new ReadBin(currentInterval.getContigName(), fr);
-            readBins.push_back(rb);
-            readIdx++;
-        }
-
-        for(unsigned int i = 0; i < regionReads.size(); i++) {
-            delete regionReads[i]->getRead();
-            delete regionReads[i];
-        }
-        regionReads.clear();
+	for(unsigned int i = 0; i < regionReads.size(); i++) {
+		delete regionReads[i]->getRead();
+		delete regionReads[i];
+	}
+	regionReads.clear();
     }
 
     TIMER_START;
     //Output the rest of the reads
     for(unsigned int i = 0; i < bam_files.size(); i++) {
-        while(nextAlignments[i] != NULL) {
-            writers[i]->addRead(nextAlignments[i], true);
+	    while(nextAlignments[i] != NULL) {
+		    writers[i]->addRead(nextAlignments[i], true);
 
-            BamAlignment b;
-            if(readers[i]->GetNextAlignment(b)) {
-                nextAlignments[i] = new BamAlignment(b);
-            } else {
-                nextAlignments[i] = NULL;
-            }
-        }
+		    BamAlignment b;
+		    if(readers[i]->GetNextAlignment(b)) {
+			    nextAlignments[i] = new BamAlignment(b);
+		    } else {
+			    nextAlignments[i] = NULL;
+		    }
+	    }
     }
     TIMER_END;
     output_t += MICRO_SECONDS;
@@ -1412,9 +1531,9 @@ int main(int argc, char *argv[])
 
     //Clean up all Writers
     for(unsigned int i = 0; i < output_files.size(); i++) {
-        writers[i]->close();
-        delete writers[i];
-        delete readers[i];
+	    writers[i]->close();
+	    delete writers[i];
+	    delete readers[i];
     }
     delete[] writers;
     delete[] readers;
@@ -1423,8 +1542,10 @@ int main(int argc, char *argv[])
     cout << "Actually Cleaned\t" << actual_cleaned << endl;
     cout << "Equal Consenuses: " << equalConsensusCount << endl;
     cout << "Loci Chagned: " << loci << endl;
-
-    freeResource();
+    
+    if(use_gpu_flag) {
+	    clReleaseMemObject(d_ch_lookup);
+    }
 
 }
 
