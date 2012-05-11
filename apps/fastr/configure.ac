@@ -30,7 +30,7 @@ CPPFLAGS=" -I${NVCC//bin\/nvcc/include} "
 
 #Set CUDA_CFLAGS to $NVCC, where substring "bin/nvcc"
 #is substituted by "lib".
-CUDA_LIBS=" -L${NVCC/'bin/nvcc'/lib}"
+CUDA_LIBS=" -L${NVCC//bin\/nvcc/lib}"
 
 # If $build_cpu contains "_64", append "64" to CUDA_LIBS
         AS_IF([uname -m |  grep -q "_64"],
