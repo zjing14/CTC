@@ -1,6 +1,5 @@
 <workflow id="bwa_pe_sam" name="Align pair-end reads with BWA and generate SAM output" version="1.0.1">
-    <!-- <description> Align reads with BWA and convert them to BAM format </description> -->
-    <description/> 
+    <description> Align reads with BWA and convert them to BAM format </description>
     <inputs>
         <param name="input-read1" type="file" format="fastq" />
         <param name="input-read2" type="file" format="fastq" />

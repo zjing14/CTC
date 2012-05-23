@@ -113,6 +113,10 @@ int moveFile(const std::string source, const std::string dest)
     }
 }
 
+int removeFile(const std::string& file) {
+    return remove(file.c_str());
+}
+
 string getCurrentTime()
 {
     time_t t;

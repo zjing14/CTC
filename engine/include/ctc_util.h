@@ -58,6 +58,7 @@ std::string getTmpDir(const std::string &prefix);
 std::string getCurrentDir();
 int changeCurrentDir(const std::string &dir);
 
+int removeFile(const std::string& file);
 int moveFile(const std::string source, const std::string dest);
 std::string getCurrentTime();
 char *getFileContent(const std::string &file);

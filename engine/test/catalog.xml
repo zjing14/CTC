@@ -25,7 +25,6 @@
 		<plugin id="sam_sorted_bam" file="plugins/samtools/sam_sorted_bam.xml"/>
 		<plugin id="mpileup" file="plugins/samtools/mpileup.xml"/>
 		<plugin id="picard_dedupe" file="plugins/picard/picard_dedupe.xml"/>
-		<workflow id="test" file="/home/hlin2/codes/CTC/engine/test/workflows/test.xml"/>
 	</suite>
 </suites>
 

@@ -8,15 +8,19 @@ def printHelp():
     print "Supporting commands:"
     print "\tlistPlugins"
     print "\tcreatePluginTemplate <pluginID>"
+    print "\tremovePlugin <pluginID>"
     print "\tqueryPlugin <pluginID>"
     print "\ttestPlugin <pluginID> [--para1 val1] [--para2 val2] ..."
     print "\texecutePlugin <pluginID> [--para1 val1] [--para2 val2] ..."
     print "\tlistWorkflows <workflowID>"
     print "\tcreateWorkflow"
+    print "\tremoveWorkflow <workflowID>"
     print "\tqueryWorkflow <workflowID>"
     print "\ttestWorkflow <workflowID> [--para1 val1] [--para2 val2] ..."
     print "\texecuteWorkflow <workflowID> [--para1 val1] [--para2 val2] ..."
     print "\tlistSuites"
+    print "\tremoveSuite"
+    print "\tclearWorkspace"
 
 class SimpleCompleter(object):
 
@@ -58,12 +62,28 @@ def listSuites():
     # print cmd
     os.system(cmd)
 
+def removeSuite(it_words):
+    cmd = "remove_suite " + engine_root_dir + " " + it_words.next()
+    os.system(cmd)
+
+def clearWorkspace():
+    cmd = "clear_workspace " + engine_root_dir;
+    os.system(cmd);
+
 def createPluginTemplate(it_words):
     cmd = "create_plugin_template " + engine_root_dir + " " + it_words.next()
     os.system(cmd)
 
+def removePlugin(it_words):
+    cmd = "remove_plugin " + engine_root_dir + " " + it_words.next()
+    os.system(cmd)
+
 def createWorkflow(it_words):
     cmd = "create_workflow " + engine_root_dir + " " + it_words.next()
+    os.system(cmd)
+
+def removeWorkflow(it_words):
+    cmd = "remove_workflow " + engine_root_dir + " " + it_words.next()
     os.system(cmd)
 
 def queryPlugin(it_words):
@@ -116,7 +136,7 @@ if (len(sys.argv) != 2):
     sys.exit("Usage: python cli.py <engine_root_dir>")
 
 engine_root_dir = sys.argv[1]
-readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'createPluginTemplate', 'listWorkflows', 'createWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
+readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'removeSuite', 'clearWorkspace', 'createPluginTemplate', 'removePlugin', 'listWorkflows', 'createWorkflow', 'removeWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
 readline.parse_and_bind('tab: complete')
 readline.parse_and_bind('set editing-mode vi')
 print ("Enter \"exit\" to quit")
@@ -153,6 +173,17 @@ while True:
         listSuites()
         continue
 
+    if word == 'removeSuite':
+        if len(words) != 2:
+            print "Usage: removeSuite <suite_id>"
+        else:
+            removeSuite(it_words)
+        continue
+
+    if word == 'clearWorkspace':
+        clearWorkspace()
+        continue
+
     if word == 'createPluginTemplate':
         if len(words) != 2:
             print "Usage: createPluginTemplate <plugin_id>"
@@ -160,11 +191,25 @@ while True:
             createPluginTemplate(it_words)
         continue
 
+    if word == 'removePlugin':
+        if len(words) != 2:
+            print "Usage: removePlugin <plugin_id>"
+        else:
+            removePlugin(it_words)
+        continue
+
     if word == 'createWorkflow':
         if len(words) != 2:
             print "Usage: createWorkflow <workflow_id>"
         else:
             createWorkflow(it_words)
+        continue
+
+    if word == 'removeWorkflow':
+        if len(words) != 2:
+            print "Usage: removeWorkflow <workflow_id>"
+        else:
+            removeWorkflow(it_words)
         continue
 
     if word == 'queryPlugin':

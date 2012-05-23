@@ -25,8 +25,9 @@ Catalog *Catalog::instance()
     return _instance;
 }
 
-int Catalog::openConfigFile(const string &conf_file)
+int Catalog::openConfigFile(const string& root_dir, const string &conf_file)
 {
+    _root_dir = root_dir;
     _conf_file = conf_file;
 
     ifstream ifs(conf_file.c_str());
@@ -139,6 +140,40 @@ int Catalog::addSuiteMember(const string &suite, const string &id)
     return 0;
 }
 
+void Catalog::removeMember(const string& id) {
+    for(int i = 0; i < _suites.size(); i++) {
+        vector <string>::iterator it;
+        for(it=_suites[i].members.begin(); it!=_suites[i].members.end(); it++) {
+            if(*it == id) {
+                _suites[i].members.erase(it);
+                return;
+            }
+        }
+    }
+}
+
+void Catalog::removeSuite(const string& id) {
+    vector <Suite>::iterator it;
+    vector <string> members;
+    for(it=_suites.begin(); it!=_suites.end(); it++) {
+        if(it->id == id) {
+            members = it->members;
+            break;
+        }
+    }
+
+    for(int i=0; i<members.size(); i++) {
+        if(_plugins.find(members[i]) != _plugins.end())
+            removePlugin(members[i]);
+        if(_workflows.find(members[i]) != _workflows.end())
+            removeWorkflow(members[i]);
+    }
+
+    if(it != _suites.end()) {
+        _suites.erase(it);
+    }
+}
+
 int Catalog::addPlugin(const string &suite, const string &id, const string &conf_file)
 {
     if(_plugins.find(id) != _plugins.end()) {
@@ -149,6 +184,14 @@ int Catalog::addPlugin(const string &suite, const string &id, const string &conf
     addSuiteMember(suite, id);
 
     return 0;
+}
+
+void Catalog::removePlugin(const string& id) {
+    string file = getPluginFile(id);
+    _plugins.erase(id);
+    removeMember(id);
+    if(removeFile(file) != 0)
+        throw __FILE__ " Error removing the plugin file";
 }
 
 int Catalog::addWorkflow(const string &suite, const string &id, const string &conf_file)
@@ -163,6 +206,14 @@ int Catalog::addWorkflow(const string &suite, const string &id, const string &co
     return 0;
 }
 
+void Catalog::removeWorkflow(const string& id) {
+    string file = getWorkflowFile(id);
+    _workflows.erase(id);
+    removeMember(id);
+    if(removeFile(file) != 0)
+        throw __FILE__ " Error removing the workflow file";
+}
+
 void Catalog::listPlugins()
 {
     for(map <string, string>::iterator it = _plugins.begin(); it != _plugins.end(); it++) {
@@ -170,7 +221,6 @@ void Catalog::listPlugins()
     }
     cout << "listPlugins" << endl;
 }
-
 
 void Catalog::listWorkflows()
 {
@@ -193,7 +243,7 @@ void Catalog::getWorkflowIDs(vector<string>& ids)
     }
 }
 
-string Catalog::getPluginFile(const string &root_dir, const string &id)
+string Catalog::getPluginFile(const string &id)
 {
     if(_plugins.find(id) == _plugins.end()) {
         DBG_LOG << "Getting config file for plugin " << id << endl;
@@ -202,12 +252,12 @@ string Catalog::getPluginFile(const string &root_dir, const string &id)
 
     string config_file = _plugins[id];
     if(config_file.c_str()[0] != '/') {
-        config_file = root_dir + config_file;
+        config_file = _root_dir + config_file;
     }
     return config_file;
 }
 
-string Catalog::getWorkflowFile(const string &root_dir, const string &id)
+string Catalog::getWorkflowFile(const string &id)
 {
     if(_workflows.find(id) == _workflows.end()) {
         DBG_LOG << "Getting config file for workflow " << id << endl;
@@ -216,7 +266,7 @@ string Catalog::getWorkflowFile(const string &root_dir, const string &id)
 
     string config_file = _workflows[id];
     if(config_file.c_str()[0] != '/') {
-        config_file = root_dir + config_file;
+        config_file = _root_dir + config_file;
     }
     return config_file;
 }
