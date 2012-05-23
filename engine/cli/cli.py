@@ -20,6 +20,7 @@ def printHelp():
     print "\texecuteWorkflow <workflowID> [--para1 val1] [--para2 val2] ..."
     print "\tlistSuites"
     print "\tremoveSuite"
+    print "\tclearWorkspace"
 
 class SimpleCompleter(object):
 
@@ -64,6 +65,10 @@ def listSuites():
 def removeSuite(it_words):
     cmd = "remove_suite " + engine_root_dir + " " + it_words.next()
     os.system(cmd)
+
+def clearWorkspace():
+    cmd = "clear_workspace " + engine_root_dir;
+    os.system(cmd);
 
 def createPluginTemplate(it_words):
     cmd = "create_plugin_template " + engine_root_dir + " " + it_words.next()
@@ -131,7 +136,7 @@ if (len(sys.argv) != 2):
     sys.exit("Usage: python cli.py <engine_root_dir>")
 
 engine_root_dir = sys.argv[1]
-readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'removeSuite', 'createPluginTemplate', 'removePlugin', 'listWorkflows', 'createWorkflow', 'removeWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
+readline.set_completer(SimpleCompleter(['quit', 'help', 'listPlugins', 'listSuites', 'removeSuite', 'clearWorkspace', 'createPluginTemplate', 'removePlugin', 'listWorkflows', 'createWorkflow', 'removeWorkflow', 'queryPlugin', 'queryWorkflow', 'executePlugin', 'testPlugin', 'executeWorkflow', 'testWorkflow']).complete)
 readline.parse_and_bind('tab: complete')
 readline.parse_and_bind('set editing-mode vi')
 print ("Enter \"exit\" to quit")
@@ -173,6 +178,10 @@ while True:
             print "Usage: removeSuite <suite_id>"
         else:
             removeSuite(it_words)
+        continue
+
+    if word == 'clearWorkspace':
+        clearWorkspace()
         continue
 
     if word == 'createPluginTemplate':
