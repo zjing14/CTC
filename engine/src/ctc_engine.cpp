@@ -62,7 +62,7 @@ Engine::Engine(const string &path, SysConfig *sys_conf)
     // Open catalog, create an empty one if it does not exist
     string catalog_file = _root_dir + "catalog.xml";
     _catalog = Catalog::instance();
-    _catalog->openConfigFile(catalog_file);
+    _catalog->openConfigFile(_root_dir, catalog_file);
 
     _sys_paras["ENGINE_DIR"] = _root_dir;
 }
@@ -77,7 +77,7 @@ void Engine::listPlugins()
     vector <string> ids;
     _catalog->getPluginIDs(ids);
     for(int i = 0; i < ids.size(); i++) {
-        string conf_file = _catalog->getPluginFile(_root_dir, ids[i]);
+        string conf_file = _catalog->getPluginFile(ids[i]);
         Plugin plugin(conf_file);
         cout << plugin.getInfo() << endl;
     }
@@ -85,26 +85,26 @@ void Engine::listPlugins()
 
 void Engine::listPluginOutput(const string &id)
 {
-    string conf_file = _catalog->getPluginFile(_root_dir, id);
+    string conf_file = _catalog->getPluginFile(id);
     Plugin plugin(conf_file);
     plugin.printOutputs();
 }
 
 void Engine::listPluginInput(const string &id)
 {
-    string conf_file = _catalog->getPluginFile(_root_dir, id);
+    string conf_file = _catalog->getPluginFile(id);
     Plugin plugin(conf_file);
     plugin.printInputs();
 }
 bool Engine::findPluginOutput(const string &id, const string &name)
 {
-    string conf_file = _catalog->getPluginFile(_root_dir, id);
+    string conf_file = _catalog->getPluginFile(id);
     Plugin plugin(conf_file);
     return plugin.findOutput(name);
 }
 bool Engine::findPluginInput(const string &id, const string &name)
 {
-    string conf_file = _catalog->getPluginFile(_root_dir, id);
+    string conf_file = _catalog->getPluginFile(id);
     Plugin plugin(conf_file);
     return plugin.findInput(name);
 }
@@ -114,7 +114,7 @@ void Engine::listWorkflows()
     _catalog->getWorkflowIDs(ids);
 
     for(int i = 0; i < ids.size(); i++) {
-        string conf_file = _catalog->getWorkflowFile(_root_dir, ids[i]);
+        string conf_file = _catalog->getWorkflowFile(ids[i]);
         Workflow workflow(conf_file);
         cout << workflow.getInfo() << endl;
     }
@@ -127,19 +127,19 @@ void Engine::listSuites()
 
 void Engine::queryPlugin(const string &id)
 {
-    Plugin plugin(_catalog->getPluginFile(_root_dir, id));
+    Plugin plugin(_catalog->getPluginFile(id));
     plugin.print();
 }
 
 void Engine::queryWorkflow(const string &id)
 {
-    Workflow workflow(_catalog->getWorkflowFile(_root_dir, id));
+    Workflow workflow(_catalog->getWorkflowFile(id));
     workflow.print();
 }
 
 int Engine::executePlugin(const string &id, map < string, string >& paras, bool dry_run)
 {
-    Plugin plugin(_catalog->getPluginFile(_root_dir, id));
+    Plugin plugin(_catalog->getPluginFile(id));
     vector <string> commands;
 
     string workdir = getTmpDir(SysConfig::instance()->getWorkDir());
@@ -176,7 +176,7 @@ int Engine::executePlugin(const string &id, map < string, string >& paras, bool 
 
 int Engine::executeWorkflow(const string &id, map < string, string >& paras, bool dry_run)
 {
-    string conf_file = _catalog->getWorkflowFile(_root_dir, id);
+    string conf_file = _catalog->getWorkflowFile(id);
     Workflow workflow(conf_file);
     executeWorkflow(workflow, paras, dry_run);
     return 0;
@@ -243,10 +243,10 @@ int Engine::executeWorkflow(Workflow &workflow, map < string, string >& paras, b
             Workflow *w;
 
             if(step.type == PLUGIN) {
-                string conf_file = _catalog->getPluginFile(_root_dir, step.plugin_id);
+                string conf_file = _catalog->getPluginFile(step.plugin_id);
                 p = new Plugin(conf_file);
             } else if(step.type == WORKFLOW) {
-                string conf_file = _catalog->getWorkflowFile(_root_dir, step.plugin_id);
+                string conf_file = _catalog->getWorkflowFile(step.plugin_id);
                 w = new Workflow(conf_file);
             } else {
                 throw __FILE__ " Invalid step type";

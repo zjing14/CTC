@@ -1,5 +1,5 @@
 AC_PREREQ([2.65])
-AC_INIT([vt_lr], [1.0])
+AC_INIT([fastr], [1.0])
 AM_INIT_AUTOMAKE([-Wall foreign 1.10])
 AC_CONFIG_HEADER(config.h)
 
